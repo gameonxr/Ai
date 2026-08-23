@@ -34,6 +34,10 @@ class ExperimentRunner:
     """Run repeatable experiments and persist lifecycle metadata."""
 
     def __init__(self, simulator_config: str = "config/simulator_config.yaml", run_id: str = "experiment", manifest_dir: str | Path = "artifacts/runs", policy_factory: Callable | None = None, metadata: dict[str, Any] | None = None):
+        if not isinstance(simulator_config, str) or not simulator_config.strip():
+            raise ValueError("simulator_config must be a non-empty string")
+        if not isinstance(run_id, str) or not run_id.strip():
+            raise ValueError("run_id must be a non-empty string")
         self.simulator_config = simulator_config
         self.run_id = run_id
         self.manifest_dir = Path(manifest_dir)

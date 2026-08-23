@@ -42,3 +42,14 @@ def test_experiment_runner_rejects_invalid_numeric_inputs(tmp_path: Path):
     for overrides in invalid_inputs:
         with pytest.raises(ValueError):
             runner.run(**overrides)
+
+
+def test_experiment_runner_rejects_empty_constructor_inputs(tmp_path: Path):
+    with pytest.raises(ValueError):
+        ExperimentRunner("", "run", tmp_path)
+    with pytest.raises(ValueError):
+        ExperimentRunner("config/simulator_config.yaml", "", tmp_path)
+    with pytest.raises(ValueError):
+        ExperimentRunner(None, "run", tmp_path)  # type: ignore[arg-type]
+    with pytest.raises(ValueError):
+        ExperimentRunner("config/simulator_config.yaml", None, tmp_path)  # type: ignore[arg-type]

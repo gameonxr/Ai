@@ -135,7 +135,8 @@ python examples/checkpoint_example.py
 
 ## Experiment orchestration
 
-`experiments/` provides a configurable runner that creates repeatable seeded episodes, writes a machine-readable run manifest, and optionally saves checkpoints at an episode cadence. The runner API rejects non-integer or out-of-range episode, step, seed, and checkpoint values before creating simulator state. Each manifest is an `artifact_type: experiment_manifest` payload with `schema_version: 1` and records requested episode count, maximum steps, seed, configuration path, lifecycle status, and per-episode metrics so reruns can be checked for provenance:
+`experiments/` provides a configurable runner that creates repeatable seeded episodes, writes a machine-readable run manifest, and optionally saves checkpoints at an episode cadence. The runner constructor requires non-empty configuration paths and run IDs, while its API rejects non-integer or out-of-range episode, step, seed, and checkpoint values before creating simulator state.
+Each manifest is an `artifact_type: experiment_manifest` payload with `schema_version: 1` and records requested episode count, maximum steps, seed, configuration path, lifecycle status, and per-episode metrics so reruns can be checked for provenance:
 
 ```bash
 python examples/run_experiment.py
