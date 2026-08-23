@@ -9,5 +9,6 @@ htmlcov/
 coverage.xml
 build/
 dist/
+artifacts/
 logs/
 .DS_Store
