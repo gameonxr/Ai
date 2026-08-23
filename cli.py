@@ -7,7 +7,7 @@ from pathlib import Path
 
 from benchmarks import run_benchmark
 from config_validation import ConfigurationValidator
-from experiments import ExperimentRunner
+from experiments import ExperimentRunner, SweepRunner
 from evaluation import Evaluator
 from health import collect_health
 from reports import ReportBuilder
@@ -49,6 +49,11 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--seed", type=int, default=42)
     evaluate.add_argument("--reward-per-step", type=float, default=1.0)
     evaluate.add_argument("--json-out", help="write a metadata-rich evaluation artifact")
+
+    sweep = subparsers.add_parser("sweep", help="run a deterministic list of experiment cases")
+    sweep.add_argument("--cases", required=True, help="JSON file containing a non-empty list of cases")
+    sweep.add_argument("--sweep-id", default="sweep")
+    sweep.add_argument("--manifest-dir", default="artifacts/runs")
 
     run = subparsers.add_parser("run", help="run seeded experiment episodes")
     run.add_argument("--config", default=default_simulator_config())
@@ -95,6 +100,10 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         finally:
             simulator.shutdown()
+    if args.command == "sweep":
+        result = SweepRunner(args.sweep_id, args.manifest_dir).run_file(args.cases)
+        print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
+        return 0
     manifest = ExperimentRunner(args.config, args.run_id, args.manifest_dir).run(args.episodes, args.max_steps, args.seed, args.checkpoint_every)
     print(json.dumps({"run_id": manifest.run_id, "status": manifest.status, "episodes_completed": manifest.episodes_completed, "total_steps": manifest.total_steps}, indent=2, sort_keys=True))
     return 0

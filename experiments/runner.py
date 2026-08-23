@@ -23,22 +23,24 @@ class RunManifest:
     total_steps: int
     metrics: list[dict[str, Any]] = field(default_factory=list)
     checkpoint_path: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class ExperimentRunner:
     """Run repeatable experiments and persist lifecycle metadata."""
 
-    def __init__(self, simulator_config: str = "config/simulator_config.yaml", run_id: str = "experiment", manifest_dir: str | Path = "artifacts/runs", policy_factory: Callable | None = None):
+    def __init__(self, simulator_config: str = "config/simulator_config.yaml", run_id: str = "experiment", manifest_dir: str | Path = "artifacts/runs", policy_factory: Callable | None = None, metadata: dict[str, Any] | None = None):
         self.simulator_config = simulator_config
         self.run_id = run_id
         self.manifest_dir = Path(manifest_dir)
         self.policy_factory = policy_factory
+        self.metadata = dict(metadata or {})
 
     def run(self, episodes: int = 1, max_steps: int = 100, seed: int | None = None, checkpoint_every: int = 0) -> RunManifest:
         if episodes < 1 or max_steps < 1:
             raise ValueError("episodes and max_steps must be >= 1")
         started = datetime.now(timezone.utc).isoformat()
-        manifest = RunManifest(self.run_id, "running", started, None, self.simulator_config, episodes, 0, 0)
+        manifest = RunManifest(self.run_id, "running", started, None, self.simulator_config, episodes, 0, 0, metadata=self.metadata.copy())
         simulator = Simulator(self.simulator_config)
         policy = self.policy_factory(simulator) if self.policy_factory else RandomTorquePolicy(list(simulator.actuators), seed=seed)
         trainer = Trainer(simulator, policy, reward_fn=lambda observation, action: 0.0)

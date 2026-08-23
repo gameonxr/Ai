@@ -39,7 +39,7 @@ class ReportBuilder:
         rewards = [float(episode.get("total_reward", 0.0)) for episode in episodes]
         steps = [int(episode.get("steps", 0)) for episode in episodes]
         evaluation_rewards = [float(item.get("mean_reward", 0.0)) for item in evaluations]
-        run_rows = [{"run_id": item.get("run_id"), "status": item.get("status"), "episodes_completed": item.get("episodes_completed", 0), "total_steps": item.get("total_steps", 0)} for item in manifests]
+        run_rows = [{"run_id": item.get("run_id"), "status": item.get("status"), "episodes_completed": item.get("episodes_completed", 0), "total_steps": item.get("total_steps", 0), "metadata": item.get("metadata", {})} for item in manifests]
         evaluation_rows = [{"config_path": item.get("config_path"), "seed": item.get("seed"), "episodes": item.get("episodes", 0), "total_steps": item.get("total_steps", 0), "mean_reward": item.get("mean_reward", 0.0), "mean_steps": item.get("mean_steps", 0.0)} for item in evaluations]
         return ReportSummary(len(manifests), len(completed), len(failed), len(episodes), sum(steps), mean(rewards) if rewards else 0.0, mean(steps) if steps else 0.0, run_rows, len(evaluations), mean(evaluation_rewards) if evaluation_rewards else 0.0, evaluation_rows)
 

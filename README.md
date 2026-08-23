@@ -141,7 +141,22 @@ python examples/checkpoint_example.py
 python examples/run_experiment.py
 ```
 
-The default settings live in `config/experiment_config.yaml`. Generated manifests and checkpoints are stored under `artifacts/`, which is intentionally excluded from version control.
+The default settings live in `config/experiment_config.yaml`. Generated manifests and checkpoints are stored under `artifacts/`, which is intentionally excluded from version control. Multiple deterministic cases can be run in declaration order from a JSON file; each case may set `run_id`, `config`, `episodes`, `max_steps`, `seed`, `checkpoint_every`, and arbitrary parameter metadata:
+
+```json
+[
+  {"run_id": "baseline-seed-1", "seed": 1, "episodes": 2, "max_steps": 100, "learning_rate": 0.001},
+  {"run_id": "baseline-seed-2", "seed": 2, "episodes": 2, "max_steps": 100, "learning_rate": 0.001}
+]
+```
+
+Run the sweep with:
+
+```bash
+ai-sim sweep --cases config/sweep_cases.json --sweep-id baseline-seeds --manifest-dir artifacts/runs
+```
+
+Each generated manifest records `sweep_id`, declaration index, and non-runtime parameter values under `metadata.parameters`, so the report command can compare the resulting runs without changing the simulator or brain contracts.
 
 ## Benchmarking
 
@@ -161,6 +176,7 @@ After installing the package, the `ai-sim` command provides one operator entry p
 ai-sim validate config/simulator_config.yaml
 ai-sim benchmark --steps 1000 --seed 42
 ai-sim run --run-id baseline --episodes 3 --max-steps 100
+ai-sim sweep --cases config/sweep_cases.json --sweep-id baseline-seeds --manifest-dir artifacts/runs
 ai-sim evaluate --episodes 5 --max-steps 100 --json-out artifacts/evaluations/baseline.json
 ai-sim report --manifest-dir artifacts --json-out artifacts/report.json --markdown-out artifacts/report.md
 ```

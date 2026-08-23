@@ -1,0 +1,16 @@
+[
+  {
+    "run_id": "baseline-seed-1",
+    "seed": 1,
+    "episodes": 2,
+    "max_steps": 100,
+    "learning_rate": 0.001
+  },
+  {
+    "run_id": "baseline-seed-2",
+    "seed": 2,
+    "episodes": 2,
+    "max_steps": 100,
+    "learning_rate": 0.001
+  }
+]
