@@ -186,7 +186,7 @@ Benchmark artifacts record the configuration path, seed, step count, simulated a
 ai-sim health --json-out artifacts/health/baseline.json
 ```
 
-The resulting `artifact_type: health` JSON can be included automatically by `ai-sim report --manifest-dir artifacts`, which reports the number of snapshots and healthy snapshots alongside experiment, evaluation, and benchmark summaries. Report generation tolerates malformed or non-object JSON files, skips them, and records their paths under `artifact_errors` so one damaged artifact does not hide the remaining results.
+The resulting `artifact_type: health` JSON can be included automatically by `ai-sim report --manifest-dir artifacts`, which reports the number of snapshots and healthy snapshots alongside experiment, evaluation, benchmark, and sweep summaries. Sweep summary artifacts are shown with requested, completed, and resumed case counts. Report generation tolerates malformed or non-object JSON files, skips them, and records their paths under `artifact_errors` so one damaged artifact does not hide the remaining results.
 
 ## Unified CLI
 

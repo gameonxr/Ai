@@ -27,6 +27,8 @@ class ReportSummary:
     healthy_count: int = 0
     health_reports: list[dict[str, Any]] = field(default_factory=list)
     artifact_errors: list[str] = field(default_factory=list)
+    sweep_count: int = 0
+    sweeps: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -52,6 +54,7 @@ class ReportBuilder:
         evaluations = [item for item in artifacts if item.get("artifact_type") == "evaluation"]
         benchmarks = [item for item in artifacts if item.get("artifact_type") == "benchmark"]
         health_reports = [item for item in artifacts if item.get("artifact_type") == "health"]
+        sweeps = [item for item in artifacts if item.get("artifact_type") == "sweep"]
         manifests = [item for item in artifacts if item.get("artifact_type") not in {"evaluation", "benchmark", "health", "sweep"} and "status" in item]
         completed = [item for item in manifests if item.get("status") == "completed"]
         failed = [item for item in manifests if item.get("status") == "failed"]
@@ -64,7 +67,8 @@ class ReportBuilder:
         evaluation_rows = [{"config_path": item.get("config_path"), "seed": item.get("seed"), "episodes": item.get("episodes", 0), "total_steps": item.get("total_steps", 0), "mean_reward": item.get("mean_reward", 0.0), "mean_steps": item.get("mean_steps", 0.0)} for item in evaluations]
         benchmark_rows = [{"config_path": item.get("config_path"), "seed": item.get("seed"), "steps": item.get("steps", 0), "simulation_seconds": item.get("simulation_seconds", 0.0), "wall_seconds": item.get("wall_seconds", 0.0), "realtime_factor": item.get("realtime_factor", 0.0)} for item in benchmarks]
         health_rows = [{"config_path": item.get("config_path"), "healthy": item.get("healthy", False), "python": item.get("python"), "platform": item.get("platform")} for item in health_reports]
-        return ReportSummary(len(manifests), len(completed), len(failed), len(episodes), sum(steps), mean(rewards) if rewards else 0.0, mean(steps) if steps else 0.0, run_rows, len(evaluations), mean(evaluation_rewards) if evaluation_rewards else 0.0, evaluation_rows, len(benchmarks), mean(realtime_factors) if realtime_factors else 0.0, benchmark_rows, len(health_reports), sum(item.get("healthy", False) for item in health_reports), health_rows, artifact_errors)
+        sweep_rows = [{"sweep_id": item.get("sweep_id"), "cases_requested": item.get("cases_requested", 0), "cases_completed": item.get("cases_completed", 0), "resumed_cases": item.get("resumed_cases", 0), "manifests": item.get("manifests", [])} for item in sweeps]
+        return ReportSummary(len(manifests), len(completed), len(failed), len(episodes), sum(steps), mean(rewards) if rewards else 0.0, mean(steps) if steps else 0.0, run_rows, len(evaluations), mean(evaluation_rewards) if evaluation_rewards else 0.0, evaluation_rows, len(benchmarks), mean(realtime_factors) if realtime_factors else 0.0, benchmark_rows, len(health_reports), sum(item.get("healthy", False) for item in health_reports), health_rows, artifact_errors, len(sweeps), sweep_rows)
 
     def write_json(self, summary: ReportSummary, path: str | Path) -> None:
         output = Path(path)
@@ -87,4 +91,8 @@ class ReportBuilder:
         if summary.health_reports:
             lines.extend(["", "| Health config | Healthy | Python | Platform |", "|---|:---:|---|---|"])
             lines.extend(f"| {item['config_path']} | {item['healthy']} | {item['python']} | {item['platform']} |" for item in summary.health_reports)
+        lines.extend(["", f"- Sweep artifacts: {summary.sweep_count}"])
+        if summary.sweeps:
+            lines.extend(["", "| Sweep | Requested | Completed | Resumed |", "|---|---:|---:|---:|"])
+            lines.extend(f"| {item['sweep_id']} | {item['cases_requested']} | {item['cases_completed']} | {item['resumed_cases']} |" for item in summary.sweeps)
         output.write_text("\n".join(lines) + "\n", encoding="utf-8")

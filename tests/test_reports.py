@@ -112,3 +112,18 @@ def test_report_builder_records_malformed_artifacts_without_failing(tmp_path: Pa
     markdown_path = tmp_path / "resilient-report.md"
     ReportBuilder().write_markdown(summary, markdown_path)
     assert "Artifact errors: 2" in markdown_path.read_text(encoding="utf-8")
+
+
+def test_report_builder_aggregates_sweep_summaries(tmp_path: Path):
+    cases_path = tmp_path / "cases.json"
+    cases_path.write_text(json.dumps([{"run_id": "report-sweep-a", "seed": 6, "episodes": 1, "max_steps": 1}]), encoding="utf-8")
+    sweep_path = tmp_path / "sweeps" / "summary.json"
+    assert main(["sweep", "--cases", str(cases_path), "--sweep-id", "report-sweep", "--manifest-dir", str(tmp_path / "runs"), "--json-out", str(sweep_path)]) == 0
+    summary = ReportBuilder().build(tmp_path)
+    assert summary.sweep_count == 1
+    assert summary.sweeps[0]["sweep_id"] == "report-sweep"
+    markdown_path = tmp_path / "sweep-report.md"
+    ReportBuilder().write_markdown(summary, markdown_path)
+    markdown_text = markdown_path.read_text(encoding="utf-8")
+    assert "Sweep artifacts: 1" in markdown_text
+    assert "report-sweep" in markdown_text
