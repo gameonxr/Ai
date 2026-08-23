@@ -8,6 +8,7 @@ from pathlib import Path
 from benchmarks import run_benchmark
 from config_validation import ConfigurationValidator
 from experiments import ExperimentRunner
+from health import collect_health
 
 
 def default_simulator_config() -> str:
@@ -29,6 +30,9 @@ def build_parser() -> argparse.ArgumentParser:
     benchmark.add_argument("--steps", type=int, default=1000)
     benchmark.add_argument("--seed", type=int, default=42)
 
+    health = subparsers.add_parser("health", help="report runtime and dependency health")
+    health.add_argument("--config", default=default_simulator_config())
+
     run = subparsers.add_parser("run", help="run seeded experiment episodes")
     run.add_argument("--config", default=default_simulator_config())
     run.add_argument("--run-id", default="experiment")
@@ -49,6 +53,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "benchmark":
         print(json.dumps(run_benchmark(args.config, args.steps, args.seed).to_dict(), indent=2, sort_keys=True))
         return 0
+    if args.command == "health":
+        report = collect_health(args.config)
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return 0 if report["healthy"] else 1
     manifest = ExperimentRunner(args.config, args.run_id, args.manifest_dir).run(args.episodes, args.max_steps, args.seed, args.checkpoint_every)
     print(json.dumps({"run_id": manifest.run_id, "status": manifest.status, "episodes_completed": manifest.episodes_completed, "total_steps": manifest.total_steps}, indent=2, sort_keys=True))
     return 0
