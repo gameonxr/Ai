@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-import json
 from pathlib import Path
 from typing import Any, Callable
 
+from artifact_io import write_json_atomic
 from checkpointing import CheckpointManager
 from simulator import Simulator
 from training import RandomTorquePolicy, Trainer
@@ -92,4 +92,4 @@ class ExperimentRunner:
     def _save_manifest(self, manifest: RunManifest) -> None:
         self.manifest_dir.mkdir(parents=True, exist_ok=True)
         path = self.manifest_dir / f"{manifest.run_id}.json"
-        path.write_text(json.dumps(asdict(manifest), indent=2, sort_keys=True), encoding="utf-8")
+        write_json_atomic(asdict(manifest), path)
