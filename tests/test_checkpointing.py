@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from brain import DummyBrain
 from simulator import Simulator
 from checkpointing import CheckpointManager
@@ -89,6 +91,32 @@ def test_checkpoint_required_fields_are_validated(tmp_path: Path):
         assert "run_id" in str(error)
     else:
         raise AssertionError("Incomplete checkpoint payload was accepted")
+
+
+def test_checkpoint_save_rejects_invalid_metadata(tmp_path: Path):
+    simulator = Simulator("config/simulator_config.yaml")
+    try:
+        with pytest.raises(ValueError, match="Checkpoint metadata must be a JSON object"):
+            CheckpointManager.save(simulator, tmp_path / "bad-save.json", metadata=[])
+    finally:
+        simulator.shutdown()
+
+
+def test_checkpoint_load_rejects_invalid_metadata(tmp_path: Path):
+    path = tmp_path / "bad-metadata.json"
+    payload = {
+        "version": 1,
+        "run_id": "bad-metadata",
+        "episode": 0,
+        "step": 0,
+        "current_time": 0.0,
+        "simulator_state": {"physics": {}},
+        "metrics": {},
+        "metadata": [],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="Checkpoint metadata must be a JSON object"):
+        CheckpointManager.load(path)
 
 
 def test_checkpoint_simulator_state_requires_physics(tmp_path: Path):

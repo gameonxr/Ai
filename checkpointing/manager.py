@@ -28,6 +28,8 @@ class CheckpointManager:
 
     @classmethod
     def save(cls, simulator, path: str | Path, run_id: str = "default", metadata: dict | None = None) -> Checkpoint:
+        if metadata is not None and not isinstance(metadata, dict):
+            raise ValueError("Checkpoint metadata must be a JSON object")
         state = {"physics": simulator.physics.get_checkpoint_state(), "paused": simulator.paused, "actuators": {name: actuator.current_command for name, actuator in simulator.actuators.items()}}
         checkpoint = Checkpoint(cls.CURRENT_VERSION, run_id, simulator.metrics.episodes, simulator.step_count, simulator.current_time, state, simulator.metrics.snapshot(), metadata or {})
         write_json_atomic(asdict(checkpoint), path)
@@ -68,7 +70,10 @@ class CheckpointManager:
             raise ValueError("Checkpoint physics state must be a JSON object")
         if "actuators" in simulator_state and not isinstance(simulator_state["actuators"], dict):
             raise ValueError("Checkpoint actuators must be a JSON object")
-        return Checkpoint(checkpoint_version, payload["run_id"], int(payload["episode"]), int(payload["step"]), float(payload["current_time"]), simulator_state, payload["metrics"], payload.get("metadata", {}), artifact_type, schema_version)
+        metadata = payload.get("metadata", {})
+        if not isinstance(metadata, dict):
+            raise ValueError("Checkpoint metadata must be a JSON object")
+        return Checkpoint(checkpoint_version, payload["run_id"], int(payload["episode"]), int(payload["step"]), float(payload["current_time"]), simulator_state, payload["metrics"], metadata, artifact_type, schema_version)
 
     @classmethod
     def restore(cls, simulator, path: str | Path) -> Checkpoint:
