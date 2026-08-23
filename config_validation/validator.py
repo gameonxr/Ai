@@ -3,8 +3,24 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+import math
 
 import yaml
+
+
+def _is_finite_number(value: Any) -> bool:
+    try:
+        return math.isfinite(float(value))
+    except (TypeError, ValueError):
+        return False
+
+
+def _is_positive_number(value: Any) -> bool:
+    return _is_finite_number(value) and float(value) > 0
+
+
+def _is_nonnegative_number(value: Any) -> bool:
+    return _is_finite_number(value) and float(value) >= 0
 
 
 @dataclass
@@ -58,12 +74,87 @@ class ConfigurationValidator:
                     referenced = base / referenced
                 if not referenced.exists():
                     errors.append(f"{section}.config_path does not exist: {referenced}")
+                else:
+                    try:
+                        with referenced.open(encoding="utf-8") as handle:
+                            loaded = yaml.safe_load(handle) or {}
+                        if not isinstance(loaded, dict):
+                            errors.append(f"{section}.config_path must contain a mapping: {referenced}")
+                        elif section == "body":
+                            self._validate_body(loaded, errors)
+                        elif section == "actuators":
+                            self._validate_actuators(loaded, errors, warnings)
+                    except yaml.YAMLError as error:
+                        errors.append(f"Invalid {section} YAML: {error}")
             elif section != "physics":
                 warnings.append(f"{section}.config_path is not set; inline defaults will be used")
         logging_cfg = config.get("logging")
         if logging_cfg is not None and not isinstance(logging_cfg, dict):
             errors.append("logging must be a mapping when provided")
         return ValidationReport(str(config_path), not errors, errors, warnings)
+
+    @staticmethod
+    def _validate_body(body: dict[str, Any], errors: list[str]) -> None:
+        links = body.get("links")
+        joints = body.get("joints")
+        if not isinstance(links, dict):
+            errors.append("body.links must be a mapping")
+            links = {}
+        if not isinstance(joints, dict):
+            errors.append("body.joints must be a mapping")
+            joints = {}
+        if len(joints) < 12:
+            errors.append("body.joints must define at least 12 joints")
+        for name, joint in joints.items():
+            if not isinstance(joint, dict):
+                errors.append(f"body.joints.{name} must be a mapping")
+                continue
+            for endpoint in ("parent", "child"):
+                link_name = joint.get(endpoint)
+                if link_name not in links:
+                    errors.append(f"body.joints.{name}.{endpoint} references unknown link: {link_name}")
+            axis = joint.get("axis")
+            if not isinstance(axis, (list, tuple)) or len(axis) != 3 or not all(_is_finite_number(value) for value in axis):
+                errors.append(f"body.joints.{name}.axis must contain three finite numbers")
+            joint_range = joint.get("range")
+            if not isinstance(joint_range, (list, tuple)) or len(joint_range) != 2 or not all(_is_finite_number(value) for value in joint_range):
+                errors.append(f"body.joints.{name}.range must contain two finite numbers")
+            elif float(joint_range[0]) >= float(joint_range[1]):
+                errors.append(f"body.joints.{name}.range lower bound must be less than upper bound")
+            if not _is_positive_number(joint.get("max_torque")):
+                errors.append(f"body.joints.{name}.max_torque must be positive")
+        initial_state = body.get("initial_state", {})
+        positions = initial_state.get("joint_positions", {}) if isinstance(initial_state, dict) else {}
+        if not isinstance(positions, dict):
+            errors.append("body.initial_state.joint_positions must be a mapping")
+        else:
+            for joint_name, position in positions.items():
+                if joint_name not in joints:
+                    errors.append(f"body.initial_state.joint_positions references unknown joint: {joint_name}")
+                elif not _is_finite_number(position):
+                    errors.append(f"body.initial_state.joint_positions.{joint_name} must be finite")
+
+    @staticmethod
+    def _validate_actuators(actuator_config: dict[str, Any], errors: list[str], warnings: list[str]) -> None:
+        actuators = actuator_config.get("actuators", actuator_config)
+        if not isinstance(actuators, dict):
+            errors.append("actuators configuration must be a mapping")
+            return
+        control_mode = actuators.get("control_mode", "torque")
+        if control_mode not in {"torque", "position"}:
+            errors.append("actuators.control_mode must be torque or position")
+        defaults = actuators.get("defaults", {})
+        if not isinstance(defaults, dict):
+            errors.append("actuators.defaults must be a mapping")
+            return
+        for field_name in ("max_torque", "max_velocity", "max_force"):
+            if not _is_positive_number(defaults.get(field_name)):
+                errors.append(f"actuators.defaults.{field_name} must be positive")
+        for field_name in ("damping", "response_time"):
+            if not _is_nonnegative_number(defaults.get(field_name)):
+                errors.append(f"actuators.defaults.{field_name} must be non-negative")
+        if "response_time" not in defaults:
+            warnings.append("actuators.defaults.response_time is not set; actuator response will be immediate")
 
     def validate_or_raise(self, path: str | Path) -> ValidationReport:
         report = self.validate(path)

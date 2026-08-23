@@ -46,7 +46,7 @@ sim.resume()
 sim.shutdown()
 ```
 
-The brain receives only `core.Observation` and returns only `core.Action`. `ActionValidator` rejects unknown joints and non-finite values while clamping commands to actuator limits. Observations and actions provide `to_dict()` and `to_json()` methods for future transport layers.
+The brain receives only `core.Observation` and returns only `core.Action`. `ActionValidator` rejects unknown joints and non-finite values while clamping commands to actuator limits. Observations and actions provide `to_dict()` and `to_json()` methods for future transport layers. `config_validation/` also checks referenced body and actuator YAML semantics, including humanoid joint count, parent/child links, finite axes and ranges, initial-state joint names, control mode, and actuator limits.
 
 ## Rollout collection
 
