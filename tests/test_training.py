@@ -21,6 +21,12 @@ def test_rollout_jsonl_persistence(tmp_path: Path):
     trainer.close()
 
 
+def test_rollout_append_rejects_non_mapping_info():
+    rollout = Rollout()
+    with pytest.raises(ValueError, match="info must be a mapping"):
+        rollout.append(None, None, 0.0, info=["not", "a", "mapping"])
+
+
 def test_rollout_save_preserves_existing_file_on_serialization_failure(tmp_path: Path):
     path = tmp_path / "rollout.jsonl"
     path.write_text("existing\n", encoding="utf-8")

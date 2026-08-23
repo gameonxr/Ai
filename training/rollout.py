@@ -26,6 +26,8 @@ class Rollout:
         self.transitions: list[Transition] = []
 
     def append(self, observation: Observation, action: Action, reward: float, done: bool = False, info: dict | None = None) -> None:
+        if info is not None and not isinstance(info, dict):
+            raise ValueError("info must be a mapping when provided")
         self.transitions.append(Transition(observation.to_dict(), action.to_dict(), float(reward), bool(done), info or {}))
 
     @property
