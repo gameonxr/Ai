@@ -43,6 +43,7 @@ def build_parser() -> argparse.ArgumentParser:
     report.add_argument("--manifest-dir", default="artifacts/runs")
     report.add_argument("--json-out")
     report.add_argument("--markdown-out")
+    report.add_argument("--strict", action="store_true", help="fail if malformed or non-object JSON artifacts are found")
 
     evaluate = subparsers.add_parser("evaluate", help="evaluate the seeded baseline policy")
     evaluate.add_argument("--config", default=default_simulator_config())
@@ -99,7 +100,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.markdown_out:
             ReportBuilder().write_markdown(summary, args.markdown_out)
         print(json.dumps(summary.to_dict(), indent=2, sort_keys=True))
-        return 0
+        return 1 if args.strict and summary.artifact_errors else 0
     if args.command == "evaluate":
         simulator = Simulator(args.config)
         try:

@@ -49,3 +49,16 @@ def test_cli_health_writes_artifact(capsys, tmp_path: Path):
     assert artifact["artifact_type"] == "health"
     assert artifact["healthy"] is True
     assert artifact["config_path"]
+
+
+def test_cli_report_strict_returns_nonzero_for_artifact_errors(capsys, tmp_path: Path):
+    (tmp_path / "broken.json").write_text("{broken", encoding="utf-8")
+    assert main(["report", "--manifest-dir", str(tmp_path), "--strict"]) == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["artifact_errors"]
+
+
+def test_cli_report_strict_succeeds_for_valid_artifacts(capsys, tmp_path: Path):
+    assert main(["report", "--manifest-dir", str(tmp_path), "--strict"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["artifact_errors"] == []
