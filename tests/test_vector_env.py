@@ -21,6 +21,16 @@ def test_vectorized_num_envs_requires_positive_integer():
             VectorizedSimulator("config/simulator_config.yaml", num_envs=value)  # type: ignore[arg-type]
 
 
+def test_vectorized_reset_seed_requires_integer_or_null():
+    vector = VectorizedSimulator("config/simulator_config.yaml", num_envs=1)
+    try:
+        for value in (True, 1.5, "20"):
+            with pytest.raises(ValueError, match="seed must be an integer or null"):
+                vector.reset(seed=value)  # type: ignore[arg-type]
+    finally:
+        vector.close()
+
+
 def test_vectorized_action_count_is_validated():
     vector = VectorizedSimulator("config/simulator_config.yaml", num_envs=2)
     vector.reset(seed=1)

@@ -36,6 +36,8 @@ class VectorizedSimulator:
         self.num_envs = num_envs
 
     def reset(self, seed: int | None = None) -> list[Observation]:
+        if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
+            raise ValueError("seed must be an integer or null")
         observations = []
         for index, simulator in enumerate(self.envs):
             simulator.reset(None if seed is None else seed + index)
