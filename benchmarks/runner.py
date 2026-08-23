@@ -30,8 +30,10 @@ class BenchmarkResult:
 
 
 def run_benchmark(config_path: str = "config/simulator_config.yaml", steps: int = 1000, seed: int | None = 42) -> BenchmarkResult:
-    if steps < 1:
-        raise ValueError("steps must be >= 1")
+    if isinstance(steps, bool) or not isinstance(steps, int) or steps < 1:
+        raise ValueError("steps must be a positive integer")
+    if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
+        raise ValueError("seed must be an integer or null")
     simulator = Simulator(config_path)
     try:
         simulator.reset(seed)

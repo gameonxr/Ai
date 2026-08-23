@@ -41,8 +41,10 @@ class ExperimentRunner:
         self.metadata = dict(metadata or {})
 
     def run(self, episodes: int = 1, max_steps: int = 100, seed: int | None = None, checkpoint_every: int = 0) -> RunManifest:
-        if episodes < 1 or max_steps < 1:
-            raise ValueError("episodes and max_steps must be >= 1")
+        self._validate_positive_int("episodes", episodes)
+        self._validate_positive_int("max_steps", max_steps)
+        self._validate_optional_int("seed", seed)
+        self._validate_nonnegative_int("checkpoint_every", checkpoint_every)
         started = datetime.now(timezone.utc).isoformat()
         manifest = RunManifest(self.run_id, "running", started, None, self.simulator_config, episodes, 0, 0, metadata=self.metadata.copy(), max_steps_requested=max_steps, seed=seed)
         simulator = Simulator(self.simulator_config)
@@ -67,6 +69,21 @@ class ExperimentRunner:
             self._save_manifest(manifest)
             trainer.close()
         return manifest
+
+    @staticmethod
+    def _validate_positive_int(name: str, value: Any) -> None:
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            raise ValueError(f"{name} must be a positive integer")
+
+    @staticmethod
+    def _validate_nonnegative_int(name: str, value: Any) -> None:
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(f"{name} must be a non-negative integer")
+
+    @staticmethod
+    def _validate_optional_int(name: str, value: Any) -> None:
+        if value is not None and (isinstance(value, bool) or not isinstance(value, int)):
+            raise ValueError(f"{name} must be an integer or null")
 
     def _save_manifest(self, manifest: RunManifest) -> None:
         self.manifest_dir.mkdir(parents=True, exist_ok=True)

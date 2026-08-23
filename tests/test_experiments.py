@@ -25,3 +25,20 @@ def test_experiment_runner_validates_limits(tmp_path: Path):
         runner.run(episodes=0)
     with pytest.raises(ValueError):
         runner.run(max_steps=0)
+
+
+def test_experiment_runner_rejects_invalid_numeric_inputs(tmp_path: Path):
+    runner = ExperimentRunner("config/simulator_config.yaml", "invalid-input", tmp_path)
+    invalid_inputs = [
+        {"episodes": 0},
+        {"episodes": 1.0},
+        {"max_steps": 0},
+        {"max_steps": True},
+        {"seed": False},
+        {"seed": 1.5},
+        {"checkpoint_every": -1},
+        {"checkpoint_every": 1.0},
+    ]
+    for overrides in invalid_inputs:
+        with pytest.raises(ValueError):
+            runner.run(**overrides)

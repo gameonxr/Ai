@@ -135,7 +135,7 @@ python examples/checkpoint_example.py
 
 ## Experiment orchestration
 
-`experiments/` provides a configurable runner that creates repeatable seeded episodes, writes a machine-readable run manifest, and optionally saves checkpoints at an episode cadence. Each manifest is an `artifact_type: experiment_manifest` payload with `schema_version: 1` and records requested episode count, maximum steps, seed, configuration path, lifecycle status, and per-episode metrics so reruns can be checked for provenance:
+`experiments/` provides a configurable runner that creates repeatable seeded episodes, writes a machine-readable run manifest, and optionally saves checkpoints at an episode cadence. The runner API rejects non-integer or out-of-range episode, step, seed, and checkpoint values before creating simulator state. Each manifest is an `artifact_type: experiment_manifest` payload with `schema_version: 1` and records requested episode count, maximum steps, seed, configuration path, lifecycle status, and per-episode metrics so reruns can be checked for provenance:
 
 ```bash
 python examples/run_experiment.py
@@ -176,7 +176,7 @@ ai-sim benchmark --steps 1000 --seed 42 --json-out artifacts/benchmarks/baseline
 ai-sim report --manifest-dir artifacts --json-out artifacts/report.json --markdown-out artifacts/report.md
 ```
 
-Benchmark artifacts record the configuration path, seed, step count, simulated and wall-clock duration, real-time factor, and final simulator state.
+Benchmark artifacts record the configuration path, seed, step count, simulated and wall-clock duration, real-time factor, and final simulator state. The benchmark API likewise rejects non-integer or non-positive step values and non-integer seeds before simulation starts.
 
 ## Runtime health diagnostics
 
