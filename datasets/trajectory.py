@@ -68,8 +68,15 @@ def load_dataset(path: str | Path) -> TrajectoryDataset:
     header = json.loads(lines[0])
     if not isinstance(header, dict):
         raise ValueError("Trajectory dataset header must be a JSON object")
-    if header.get("type") != "metadata" or int(header.get("schema_version", -1)) != TrajectoryDatasetWriter.SCHEMA_VERSION:
+    if header.get("type") != "metadata":
         raise ValueError("Unsupported trajectory dataset schema")
+    schema_version = header.get("schema_version", -1)
+    try:
+        schema_version = int(schema_version)
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"Unsupported trajectory dataset schema version: {schema_version}") from error
+    if schema_version != TrajectoryDatasetWriter.SCHEMA_VERSION:
+        raise ValueError(f"Unsupported trajectory dataset schema version: {schema_version}")
     metadata = header.get("metadata", {})
     if not isinstance(metadata, dict):
         raise ValueError("Trajectory dataset metadata must be a JSON object")

@@ -57,5 +57,12 @@ def test_trajectory_transition_must_be_an_object(tmp_path: Path):
 def test_trajectory_schema_is_validated(tmp_path: Path):
     path = tmp_path / "bad.jsonl"
     path.write_text('{"type":"metadata","schema_version":99}\n', encoding="utf-8")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Unsupported trajectory dataset schema version: 99"):
+        load_dataset(path)
+
+
+def test_trajectory_schema_version_must_be_numeric(tmp_path: Path):
+    path = tmp_path / "non-numeric-schema.jsonl"
+    path.write_text('{"type":"metadata","schema_version":"future"}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="Unsupported trajectory dataset schema version: future"):
         load_dataset(path)
