@@ -24,3 +24,10 @@ def test_backend_step_requires_finite_numeric_timestep():
             engine.step(value)  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="dt must be in"):
         engine.step(0.0)
+
+
+def test_backend_gravity_requires_finite_three_vector():
+    engine = MuJoCoBackend({})
+    for value in ("gravity", [0.0, 0.0], [0.0, 0.0, math.nan]):
+        with pytest.raises(ValueError, match="gravity must be a finite 3-vector"):
+            engine.set_gravity(value)  # type: ignore[arg-type]

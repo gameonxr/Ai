@@ -99,7 +99,10 @@ class ToyPhysicsEngine(PhysicsEngine):
         return [{"position": [float(self.body_position[0]), float(self.body_position[1]), 0.0], "force": [0.0, 0.0, float(self.body.mass * abs(self.gravity[2]))], "object_id": "floor"}] if self.body is not None else []
 
     def set_gravity(self, gravity) -> None:
-        gravity = np.asarray(gravity, dtype=float)
+        try:
+            gravity = np.asarray(gravity, dtype=float)
+        except (TypeError, ValueError) as error:
+            raise ValueError("gravity must be a finite 3-vector") from error
         if gravity.shape != (3,) or not np.all(np.isfinite(gravity)):
             raise ValueError("gravity must be a finite 3-vector")
         self.gravity = gravity
