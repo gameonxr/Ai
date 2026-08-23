@@ -6,7 +6,7 @@ AI Body Simulator is a **brain-agnostic, deterministic humanoid simulation found
 
 ## Current scope
 
-This repository implements the Phase 1 foundation described in `AI_BODY_SIMULATOR_SPEC.md`: a configurable 13-DOF humanoid body, YAML configuration loading, a physics abstraction with MuJoCo/Bullet-compatible backend boundaries, modular proprioception/IMU/vision/touch sensors, validated motor actions, deterministic stepping, pause/resume, examples, and pytest coverage. Phase 2 adds an opt-in, headless Matplotlib renderer and a stable renderer interface for debugging and visualization. The next modular phase adds a policy interface, simulator training adapter, seeded baseline policy, episode metrics, and JSONL rollout persistence. Multi-agent support, recording beyond rollouts, and external AI connections remain deferred.
+This repository implements the Phase 1 foundation described in `AI_BODY_SIMULATOR_SPEC.md`: a configurable 13-DOF humanoid body, YAML configuration loading, a physics abstraction with MuJoCo/Bullet-compatible backend boundaries, modular proprioception/IMU/vision/touch sensors, validated motor actions, deterministic stepping, pause/resume, examples, and pytest coverage. Phase 2 adds an opt-in, headless Matplotlib renderer and a stable renderer interface for debugging and visualization. The next modular phase adds a policy interface, simulator training adapter, seeded baseline policy, episode metrics, and JSONL rollout persistence. A multi-agent coordinator now synchronizes independent simulator instances while preserving the single-agent APIs. Recording beyond rollouts and external AI connections remain deferred.
 
 ## Quick start
 
@@ -56,11 +56,17 @@ The `training/` package keeps policies behind the same brain contract. A seeded 
 python examples/collect_rollouts.py
 ```
 
-For custom experiments, implement `Policy.act(observation) -> Action`, pass it to `Trainer`, and provide a reward function. `config/training_config.yaml` records the intended episode, seed, and policy defaults.
+For custom experiments, implement `Policy.act(observation) -> Action`, pass it to `Trainer`, and provide a reward function. `config/training_config.yaml` records the intended episode, seed, and policy defaults. The multi-agent baseline can be run with:
+
+```bash
+python examples/multi_agent_example.py
+```
+
+`MultiAgentCoordinator` owns one isolated `SimulationEnvironment` per named agent and advances them in a deterministic synchronization order. Agents exchange only standardized observations and actions; they do not share physics internals.
 
 ## Repository layout
 
-`simulator/` orchestrates the loop and configuration. `brain/` contains the abstract brain contract and dummy implementation. `body/` loads links and joints from YAML. `physics/` defines the backend abstraction and portable MuJoCo/Bullet boundaries. `sensors/` and `actuators/` provide modular components. `environment/` contains the basic floor/world model. `rendering/` provides the headless renderer interface and Matplotlib implementation. `training/` provides policy, trainer, and rollout interfaces. `config/`, `examples/`, and `tests/` contain configuration, usage examples, and automated verification.
+`simulator/` orchestrates the loop and configuration. `brain/` contains the abstract brain contract and dummy implementation. `body/` loads links and joints from YAML. `physics/` defines the backend abstraction and portable MuJoCo/Bullet boundaries. `sensors/` and `actuators/` provide modular components. `environment/` contains the basic floor/world model. `rendering/` provides the headless renderer interface and Matplotlib implementation. `training/` provides policy, trainer, and rollout interfaces. `agents/` provides the multi-agent coordinator. `config/`, `examples/`, and `tests/` contain configuration, usage examples, and automated verification.
 
 ## Design constraints
 
