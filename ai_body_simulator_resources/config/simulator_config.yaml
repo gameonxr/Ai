@@ -1,0 +1,32 @@
+simulator:
+  timestep: 0.005
+  max_timestep: 0.1
+  real_time_factor: 1.0
+  seed: 42
+  debug: false
+  headless: true
+physics:
+  config_path: config/physics_config.yaml
+body:
+  config_path: config/body_humanoid.yaml
+  initial_position: [0, 0, 0]
+  initial_rotation: [0, 0, 0, 1]
+sensors:
+  config_path: config/sensors_config.yaml
+actuators:
+  config_path: config/actuators_config.yaml
+environment:
+  floor_enabled: true
+  floor_friction: 0.5
+  floor_size: [10, 10]
+rendering:
+  enabled: false
+  renderer: matplotlib
+  width: 640
+  height: 640
+  dpi: 100
+  show_axes: true
+  label_links: false
+logging:
+  level: INFO
+  file: logs/simulation.log

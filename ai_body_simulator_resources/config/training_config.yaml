@@ -1,0 +1,8 @@
+training:
+  episodes: 3
+  max_steps: 100
+  seed: 42
+  rollout_path: artifacts/rollouts.jsonl
+  policy:
+    type: random_torque
+    scale: 0.05

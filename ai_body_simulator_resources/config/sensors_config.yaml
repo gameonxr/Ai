@@ -1,0 +1,6 @@
+sensors:
+  proprioception: {enabled: true, noise_std: 0.0, filter_alpha: 1.0}
+  vision: {enabled: false, resolution: [64, 64], fov: 90.0}
+  depth: {enabled: false, resolution: [64, 64]}
+  imu: {enabled: true, noise_std: 0.0, filter_alpha: 1.0}
+  touch: {enabled: false}

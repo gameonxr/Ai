@@ -1,0 +1,8 @@
+experiment:
+  run_id: baseline-rollout
+  simulator_config: config/simulator_config.yaml
+  manifest_dir: artifacts/runs
+  episodes: 3
+  max_steps: 100
+  seed: 42
+  checkpoint_every: 1

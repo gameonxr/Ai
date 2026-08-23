@@ -1,0 +1,4 @@
+benchmark:
+  simulator_config: config/simulator_config.yaml
+  steps: 1000
+  seed: 42

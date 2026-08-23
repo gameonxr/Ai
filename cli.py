@@ -2,10 +2,19 @@ from __future__ import annotations
 
 import argparse
 import json
+from importlib.resources import files
+from pathlib import Path
 
 from benchmarks import run_benchmark
 from config_validation import ConfigurationValidator
 from experiments import ExperimentRunner
+
+
+def default_simulator_config() -> str:
+    local = Path("config/simulator_config.yaml")
+    if local.exists():
+        return str(local)
+    return str(files("ai_body_simulator_resources").joinpath("config/simulator_config.yaml"))
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -13,15 +22,15 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     validate = subparsers.add_parser("validate", help="validate the canonical simulator YAML")
-    validate.add_argument("path", nargs="?", default="config/simulator_config.yaml")
+    validate.add_argument("path", nargs="?", default=default_simulator_config())
 
     benchmark = subparsers.add_parser("benchmark", help="run a deterministic step benchmark")
-    benchmark.add_argument("--config", default="config/simulator_config.yaml")
+    benchmark.add_argument("--config", default=default_simulator_config())
     benchmark.add_argument("--steps", type=int, default=1000)
     benchmark.add_argument("--seed", type=int, default=42)
 
     run = subparsers.add_parser("run", help="run seeded experiment episodes")
-    run.add_argument("--config", default="config/simulator_config.yaml")
+    run.add_argument("--config", default=default_simulator_config())
     run.add_argument("--run-id", default="experiment")
     run.add_argument("--manifest-dir", default="artifacts/runs")
     run.add_argument("--episodes", type=int, default=1)

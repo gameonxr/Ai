@@ -1,0 +1,5 @@
+checkpointing:
+  enabled: true
+  run_id: phase-run
+  path: artifacts/checkpoint.json
+  save_every_steps: 100
