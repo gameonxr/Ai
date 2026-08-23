@@ -10,6 +10,7 @@ from config_validation import ConfigurationValidator
 from experiments import ExperimentRunner
 from evaluation import Evaluator
 from health import collect_health
+from reports import ReportBuilder
 from simulator import Simulator
 from training import RandomTorquePolicy
 
@@ -35,6 +36,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     health = subparsers.add_parser("health", help="report runtime and dependency health")
     health.add_argument("--config", default=default_simulator_config())
+
+    report = subparsers.add_parser("report", help="aggregate experiment manifests")
+    report.add_argument("--manifest-dir", default="artifacts/runs")
+    report.add_argument("--json-out")
+    report.add_argument("--markdown-out")
 
     evaluate = subparsers.add_parser("evaluate", help="evaluate the seeded baseline policy")
     evaluate.add_argument("--config", default=default_simulator_config())
@@ -67,6 +73,14 @@ def main(argv: list[str] | None = None) -> int:
         report = collect_health(args.config)
         print(json.dumps(report, indent=2, sort_keys=True))
         return 0 if report["healthy"] else 1
+    if args.command == "report":
+        summary = ReportBuilder().build(args.manifest_dir)
+        if args.json_out:
+            ReportBuilder().write_json(summary, args.json_out)
+        if args.markdown_out:
+            ReportBuilder().write_markdown(summary, args.markdown_out)
+        print(json.dumps(summary.to_dict(), indent=2, sort_keys=True))
+        return 0
     if args.command == "evaluate":
         simulator = Simulator(args.config)
         try:
