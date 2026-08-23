@@ -43,6 +43,8 @@ class SimulatedRobotAdapter(RobotAdapter):
             self._connected = True
 
     def disconnect(self) -> None:
+        if self._connected:
+            self.simulator.set_brain(None)
         self._connected = False
 
     @property

@@ -18,4 +18,6 @@ def test_simulated_robot_adapter_contract():
     assert adapter.simulator.paused
     adapter.resume_after_stop()
     adapter.disconnect()
+    assert not adapter.connected
+    assert simulator.brain is None
     simulator.shutdown()
