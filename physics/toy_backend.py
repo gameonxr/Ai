@@ -50,7 +50,11 @@ class ToyPhysicsEngine(PhysicsEngine):
                 self.commands[joint] = command if isinstance(command, dict) else {"target": float(command), "mode": "torque"}
 
     def step(self, dt=0.005) -> None:
+        if isinstance(dt, bool) or not isinstance(dt, (int, float, np.integer, np.floating)):
+            raise ValueError("dt must be a finite number")
         dt = float(dt)
+        if not np.isfinite(dt):
+            raise ValueError("dt must be a finite number")
         if not 0 < dt <= 0.1:
             raise ValueError("dt must be in (0, 0.1]")
         for name, joint in self.body.joints.items():
