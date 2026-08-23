@@ -4,6 +4,16 @@ from brain import DummyBrain
 from simulator import Simulator
 
 
+def test_simulator_set_brain_requires_interface_or_none():
+    sim = Simulator("config/simulator_config.yaml")
+    try:
+        with pytest.raises(TypeError, match="brain must implement BrainInterface or be None"):
+            sim.set_brain(object())  # type: ignore[arg-type]
+        sim.set_brain(None)
+    finally:
+        sim.shutdown()
+
+
 def test_simulator_reset_seed_requires_integer_or_null():
     sim = Simulator("config/simulator_config.yaml")
     try:

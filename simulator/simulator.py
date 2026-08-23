@@ -54,7 +54,9 @@ class Simulator:
             path = self.config_path.parent.parent / path
         return path
 
-    def set_brain(self, brain: BrainInterface) -> None:
+    def set_brain(self, brain: BrainInterface | None) -> None:
+        if brain is not None and not isinstance(brain, BrainInterface):
+            raise TypeError("brain must implement BrainInterface or be None")
         self.brain = brain
 
     def reset(self, seed: int | None = None) -> None:
