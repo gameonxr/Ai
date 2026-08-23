@@ -19,6 +19,8 @@ class Checkpoint:
     simulator_state: dict[str, Any]
     metrics: dict[str, Any]
     metadata: dict[str, Any] = field(default_factory=dict)
+    artifact_type: str = "checkpoint"
+    schema_version: int = 1
 
 
 class CheckpointManager:
@@ -36,7 +38,7 @@ class CheckpointManager:
         payload = json.loads(Path(path).read_text(encoding="utf-8"))
         if int(payload.get("version", -1)) != cls.CURRENT_VERSION:
             raise ValueError(f"Unsupported checkpoint version: {payload.get('version')}")
-        return Checkpoint(payload["version"], payload["run_id"], int(payload["episode"]), int(payload["step"]), float(payload["current_time"]), payload["simulator_state"], payload["metrics"], payload.get("metadata", {}))
+        return Checkpoint(payload["version"], payload["run_id"], int(payload["episode"]), int(payload["step"]), float(payload["current_time"]), payload["simulator_state"], payload["metrics"], payload.get("metadata", {}), payload.get("artifact_type", "checkpoint"), int(payload.get("schema_version", 1)))
 
     @classmethod
     def restore(cls, simulator, path: str | Path) -> Checkpoint:

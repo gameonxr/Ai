@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from brain import DummyBrain
@@ -32,3 +33,18 @@ def test_checkpoint_version_is_validated(tmp_path: Path):
         assert "Unsupported checkpoint version" in str(error)
     else:
         raise AssertionError("Invalid checkpoint version was accepted")
+
+
+def test_checkpoint_persists_artifact_taxonomy(tmp_path: Path):
+    simulator = Simulator("config/simulator_config.yaml")
+    try:
+        path = tmp_path / "checkpoint.json"
+        CheckpointManager.save(simulator, path, "typed-checkpoint")
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        assert payload["artifact_type"] == "checkpoint"
+        assert payload["schema_version"] == 1
+        loaded = CheckpointManager.load(path)
+        assert loaded.artifact_type == "checkpoint"
+        assert loaded.schema_version == 1
+    finally:
+        simulator.shutdown()
