@@ -90,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.json_out:
             output = Path(args.json_out)
             output.parent.mkdir(parents=True, exist_ok=True)
-            output.write_text(json.dumps({"artifact_type": "health", "config_path": args.config, **report}, indent=2, sort_keys=True), encoding="utf-8")
+            output.write_text(json.dumps({"artifact_type": "health", "schema_version": 1, "config_path": args.config, **report}, indent=2, sort_keys=True), encoding="utf-8")
         print(json.dumps(report, indent=2, sort_keys=True))
         return 0 if report["healthy"] else 1
     if args.command == "report":

@@ -36,6 +36,7 @@ def test_cli_benchmark_writes_artifact(capsys, tmp_path: Path):
     json.loads(capsys.readouterr().out)
     artifact = json.loads(json_out.read_text(encoding="utf-8"))
     assert artifact["artifact_type"] == "benchmark"
+    assert artifact["schema_version"] == 1
     assert artifact["steps"] == 2
     assert artifact["seed"] == 7
     assert artifact["config_path"]
@@ -47,6 +48,7 @@ def test_cli_health_writes_artifact(capsys, tmp_path: Path):
     json.loads(capsys.readouterr().out)
     artifact = json.loads(json_out.read_text(encoding="utf-8"))
     assert artifact["artifact_type"] == "health"
+    assert artifact["schema_version"] == 1
     assert artifact["healthy"] is True
     assert artifact["config_path"]
 
@@ -62,3 +64,12 @@ def test_cli_report_strict_succeeds_for_valid_artifacts(capsys, tmp_path: Path):
     assert main(["report", "--manifest-dir", str(tmp_path), "--strict"]) == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["artifact_errors"] == []
+
+
+def test_cli_evaluation_artifact_has_schema_version(capsys, tmp_path: Path):
+    json_out = tmp_path / "evaluation.json"
+    assert main(["evaluate", "--episodes", "1", "--max-steps", "1", "--json-out", str(json_out)]) == 0
+    json.loads(capsys.readouterr().out)
+    artifact = json.loads(json_out.read_text(encoding="utf-8"))
+    assert artifact["artifact_type"] == "evaluation"
+    assert artifact["schema_version"] == 1

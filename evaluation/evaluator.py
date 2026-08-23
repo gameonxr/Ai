@@ -26,6 +26,7 @@ class EvaluationSummary:
         """Return a persisted evaluation payload with reproducibility metadata."""
         return {
             "artifact_type": "evaluation",
+            "schema_version": 1,
             "config_path": config_path,
             "seed": seed,
             "reward_per_step": reward_per_step,

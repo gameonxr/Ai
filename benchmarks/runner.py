@@ -23,6 +23,7 @@ class BenchmarkResult:
         """Return a persisted benchmark payload with run provenance."""
         return {
             "artifact_type": "benchmark",
+            "schema_version": 1,
             "config_path": config_path,
             "seed": seed,
             **self.to_dict(),

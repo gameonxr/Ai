@@ -24,6 +24,7 @@ class SweepResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "artifact_type": "sweep",
+            "schema_version": 1,
             "sweep_id": self.sweep_id,
             "cases_requested": self.cases_requested,
             "cases_completed": self.cases_completed,
