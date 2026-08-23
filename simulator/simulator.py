@@ -73,8 +73,8 @@ class Simulator:
             self.brain.reset({"seed": seed})
 
     def step(self, n_steps: int = 1):
-        if n_steps < 1:
-            raise ValueError("n_steps must be >= 1")
+        if isinstance(n_steps, bool) or not isinstance(n_steps, int) or n_steps < 1:
+            raise ValueError("n_steps must be a positive integer")
         observation = None
         for _ in range(n_steps):
             if self.paused:
