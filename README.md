@@ -84,9 +84,19 @@ python examples/robot_adapter_example.py
 
 Live robot I/O is deliberately disabled by default and requires a future, explicitly implemented transport adapter. `config/robot_adapter_config.yaml` records this safety boundary.
 
+## Vectorized environments
+
+`vector_env/` provides a batched reset/step interface over independent simulator instances. The current implementation advances environments sequentially in a deterministic order, while keeping the API ready for a future parallel execution backend:
+
+```bash
+python examples/vector_env_example.py
+```
+
+Each environment has isolated state and receives one validated `Action` per batch position. `config/vector_env_config.yaml` contains the default batch size and seed.
+
 ## Repository layout
 
-`simulator/` orchestrates the loop and configuration. `brain/` contains the abstract brain contract and dummy implementation. `body/` loads links and joints from YAML. `physics/` defines the backend abstraction and portable MuJoCo/Bullet boundaries. `sensors/` and `actuators/` provide modular components. `environment/` contains the basic floor/world model. `rendering/` provides the headless renderer interface and Matplotlib implementation. `training/` provides policy, trainer, and rollout interfaces. `agents/` provides the multi-agent coordinator. `recording/` provides episode recording and replay primitives. `robot/` provides the safe adapter contract. `config/`, `examples/`, and `tests/` contain configuration, usage examples, and automated verification.
+`simulator/` orchestrates the loop and configuration. `brain/` contains the abstract brain contract and dummy implementation. `body/` loads links and joints from YAML. `physics/` defines the backend abstraction and portable MuJoCo/Bullet boundaries. `sensors/` and `actuators/` provide modular components. `environment/` contains the basic floor/world model. `rendering/` provides the headless renderer interface and Matplotlib implementation. `training/` provides policy, trainer, and rollout interfaces. `agents/` provides the multi-agent coordinator. `recording/` provides episode recording and replay primitives. `robot/` provides the safe adapter contract. `vector_env/` provides batched independent environments. `config/`, `examples/`, and `tests/` contain configuration, usage examples, and automated verification.
 
 ## Design constraints
 

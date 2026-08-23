@@ -1,0 +1,23 @@
+import pytest
+
+from core import Action
+from vector_env import VectorizedSimulator
+
+
+def test_vectorized_reset_and_step():
+    vector = VectorizedSimulator("config/simulator_config.yaml", num_envs=3)
+    observations = vector.reset(seed=20)
+    assert len(observations) == 3
+    next_observations = vector.step([Action(joint_targets={"neck": 0.0}) for _ in observations])
+    assert len(next_observations) == 3
+    assert [item.timestamp for item in next_observations] == [0.005] * 3
+    assert [state["step_count"] for state in vector.get_states()] == [2, 2, 2]
+    vector.close()
+
+
+def test_vectorized_action_count_is_validated():
+    vector = VectorizedSimulator("config/simulator_config.yaml", num_envs=2)
+    vector.reset(seed=1)
+    with pytest.raises(ValueError):
+        vector.step([Action(joint_targets={"neck": 0.0})])
+    vector.close()

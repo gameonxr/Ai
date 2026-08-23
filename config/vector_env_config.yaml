@@ -1,0 +1,4 @@
+vector_env:
+  enabled: true
+  num_envs: 4
+  seed: 42
