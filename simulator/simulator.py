@@ -58,6 +58,8 @@ class Simulator:
         self.brain = brain
 
     def reset(self, seed: int | None = None) -> None:
+        if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
+            raise ValueError("seed must be an integer or null")
         if seed is not None:
             np.random.seed(seed)
         self.physics.reset(seed)

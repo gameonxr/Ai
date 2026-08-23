@@ -4,6 +4,16 @@ from brain import DummyBrain
 from simulator import Simulator
 
 
+def test_simulator_reset_seed_requires_integer_or_null():
+    sim = Simulator("config/simulator_config.yaml")
+    try:
+        for value in (True, 1.5, "7"):
+            with pytest.raises(ValueError, match="seed must be an integer or null"):
+                sim.reset(seed=value)  # type: ignore[arg-type]
+    finally:
+        sim.shutdown()
+
+
 def test_simulator_step_requires_positive_integer():
     sim = Simulator("config/simulator_config.yaml")
     try:
