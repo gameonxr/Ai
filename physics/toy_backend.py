@@ -71,6 +71,26 @@ class ToyPhysicsEngine(PhysicsEngine):
     def get_body_state(self) -> dict:
         return {"joint_positions": deepcopy(self.positions), "joint_velocities": deepcopy(self.velocities), "joint_accelerations": deepcopy(self.accelerations), "body_position": self.body_position.tolist(), "body_velocity": self.body_velocity.tolist(), "body_rotation": self.body_rotation.tolist(), "body_angular_velocity": self.body_angular_velocity.tolist(), "gravity": self.gravity.tolist(), "time": self.time}
 
+    def get_checkpoint_state(self) -> dict:
+        return {"positions": deepcopy(self.positions), "velocities": deepcopy(self.velocities), "accelerations": deepcopy(self.accelerations), "commands": deepcopy(self.commands), "body_position": self.body_position.tolist(), "body_velocity": self.body_velocity.tolist(), "body_rotation": self.body_rotation.tolist(), "body_angular_velocity": self.body_angular_velocity.tolist(), "gravity": self.gravity.tolist(), "time": self.time}
+
+    def restore_checkpoint_state(self, state: dict) -> None:
+        if self.body is None:
+            raise RuntimeError("Body must be loaded before restoring a checkpoint")
+        expected = set(self.positions)
+        if set(state.get("positions", {})) != expected:
+            raise ValueError("Checkpoint joint set does not match the loaded body")
+        self.positions = {name: float(value) for name, value in state["positions"].items()}
+        self.velocities = {name: float(value) for name, value in state["velocities"].items()}
+        self.accelerations = {name: float(value) for name, value in state["accelerations"].items()}
+        self.commands = deepcopy(state.get("commands", {}))
+        self.body_position = np.asarray(state["body_position"], dtype=float)
+        self.body_velocity = np.asarray(state["body_velocity"], dtype=float)
+        self.body_rotation = np.asarray(state["body_rotation"], dtype=float)
+        self.body_angular_velocity = np.asarray(state["body_angular_velocity"], dtype=float)
+        self.gravity = np.asarray(state["gravity"], dtype=float)
+        self.time = float(state["time"])
+
     def get_contact_info(self) -> list:
         return [{"position": [float(self.body_position[0]), float(self.body_position[1]), 0.0], "force": [0.0, 0.0, float(self.body.mass * abs(self.gravity[2]))], "object_id": "floor"}] if self.body is not None else []
 

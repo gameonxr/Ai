@@ -11,6 +11,7 @@ from sensors.observation_builder import ObservationBuilder
 from sensors.sensor_registry import build_sensors
 from rendering import create_renderer
 from observability import SimulationMetrics, configure_logging, log_event
+from checkpointing import CheckpointManager
 from .config_loader import ConfigLoader
 
 
@@ -105,6 +106,18 @@ class Simulator:
 
     def get_state(self) -> dict:
         return {"current_time": self.current_time, "step_count": self.step_count, "paused": self.paused, "physics_state": self.physics.get_body_state(), "metrics": self.metrics.snapshot()}
+
+    def save_checkpoint(self, path: str | Path, run_id: str = "default", metadata: dict | None = None):
+        """Persist simulator state for a later resumable run."""
+        checkpoint = CheckpointManager.save(self, path, run_id, metadata)
+        log_event(self.logger, 20, "checkpoint_saved", {"path": str(path), "step": self.step_count})
+        return checkpoint
+
+    def restore_checkpoint(self, path: str | Path):
+        """Restore a checkpoint created by ``save_checkpoint``."""
+        checkpoint = CheckpointManager.restore(self, path)
+        log_event(self.logger, 20, "checkpoint_restored", {"path": str(path), "step": self.step_count})
+        return checkpoint
 
     def render(self, output_path: str | Path | None = None):
         """Render the current state when rendering is enabled in YAML."""

@@ -17,6 +17,12 @@ class PhysicsEngine(ABC):
     def get_body_state(self) -> dict: ...
     @abstractmethod
     def get_contact_info(self) -> list: ...
+
+    def get_checkpoint_state(self) -> dict:
+        raise NotImplementedError("This backend does not support checkpointing")
+
+    def restore_checkpoint_state(self, state: dict) -> None:
+        raise NotImplementedError("This backend does not support checkpointing")
     @abstractmethod
     def set_gravity(self, gravity: list[float] | tuple[float, float, float]) -> None: ...
     @abstractmethod
