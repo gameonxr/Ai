@@ -46,6 +46,8 @@ class VectorizedSimulator:
 
     def step(self, actions: list[Action] | None = None) -> list[Observation]:
         if actions is not None:
+            if not isinstance(actions, (list, tuple)):
+                raise ValueError("actions must be a list or tuple")
             if len(actions) != self.num_envs:
                 raise ValueError("actions length must match num_envs")
             for brain, action in zip(self._brains, actions):

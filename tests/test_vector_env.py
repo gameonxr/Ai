@@ -31,6 +31,16 @@ def test_vectorized_reset_seed_requires_integer_or_null():
         vector.close()
 
 
+def test_vectorized_step_requires_action_container():
+    vector = VectorizedSimulator("config/simulator_config.yaml", num_envs=1)
+    vector.reset(seed=1)
+    try:
+        with pytest.raises(ValueError, match="actions must be a list or tuple"):
+            vector.step("not-actions")  # type: ignore[arg-type]
+    finally:
+        vector.close()
+
+
 def test_vectorized_action_count_is_validated():
     vector = VectorizedSimulator("config/simulator_config.yaml", num_envs=2)
     vector.reset(seed=1)
