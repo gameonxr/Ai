@@ -178,6 +178,10 @@ ai-sim report --manifest-dir artifacts --json-out artifacts/report.json --markdo
 
 Benchmark artifacts record the configuration path, seed, step count, simulated and wall-clock duration, real-time factor, and final simulator state. The benchmark API likewise rejects non-integer or non-positive step values and non-integer seeds before simulation starts.
 
+## Evaluation
+
+`evaluation/` runs seeded policy evaluation and produces aggregate episode metrics. The evaluator rejects non-integer or out-of-range episode, step, and seed inputs before touching simulator state. Persist the result with `ai-sim evaluate --json-out artifacts/evaluations/baseline.json`; the artifact is report-compatible and carries its configuration, seed, reward setting, and `schema_version: 1`.
+
 ## Runtime health diagnostics
 
 `health.py` checks the canonical configuration and required/optional runtime dependencies. Persist a snapshot when collecting reproducibility evidence for a run:

@@ -23,3 +23,23 @@ def test_evaluator_validates_limits():
     with pytest.raises(ValueError):
         evaluator.run(episodes=0)
     simulator.shutdown()
+
+
+def test_evaluator_rejects_invalid_numeric_inputs():
+    simulator = Simulator()
+    policy = RandomTorquePolicy(list(simulator.actuators), seed=1)
+    evaluator = Evaluator(simulator, policy)
+    try:
+        invalid_inputs = [
+            {"episodes": 0},
+            {"episodes": 1.0},
+            {"max_steps": 0},
+            {"max_steps": True},
+            {"seed": False},
+            {"seed": 1.5},
+        ]
+        for overrides in invalid_inputs:
+            with pytest.raises(ValueError):
+                evaluator.run(**overrides)
+    finally:
+        simulator.shutdown()

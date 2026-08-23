@@ -43,8 +43,12 @@ class Evaluator:
         self.reward_fn = reward_fn or (lambda observation, action: 0.0)
 
     def run(self, episodes: int = 1, max_steps: int = 100, seed: int | None = 42) -> EvaluationSummary:
-        if episodes < 1 or max_steps < 1:
-            raise ValueError("episodes and max_steps must be >= 1")
+        if isinstance(episodes, bool) or not isinstance(episodes, int) or episodes < 1:
+            raise ValueError("episodes must be a positive integer")
+        if isinstance(max_steps, bool) or not isinstance(max_steps, int) or max_steps < 1:
+            raise ValueError("max_steps must be a positive integer")
+        if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
+            raise ValueError("seed must be an integer or null")
         brain = PolicyBrain(self.policy)
         self.simulator.set_brain(brain)
         results = []
