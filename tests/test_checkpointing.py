@@ -77,6 +77,38 @@ def test_legacy_untyped_checkpoint_defaults_to_current_taxonomy(tmp_path: Path):
         simulator.shutdown()
 
 
+def test_checkpoint_required_fields_are_validated(tmp_path: Path):
+    path = tmp_path / "incomplete.json"
+    path.write_text('{"version": 1}', encoding="utf-8")
+    try:
+        CheckpointManager.load(path)
+    except ValueError as error:
+        assert "Checkpoint missing required fields" in str(error)
+        assert "run_id" in str(error)
+    else:
+        raise AssertionError("Incomplete checkpoint payload was accepted")
+
+
+def test_checkpoint_state_and_metrics_must_be_objects(tmp_path: Path):
+    path = tmp_path / "bad-state.json"
+    payload = {
+        "version": 1,
+        "run_id": "bad-state",
+        "episode": 0,
+        "step": 0,
+        "current_time": 0.0,
+        "simulator_state": [],
+        "metrics": {},
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    try:
+        CheckpointManager.load(path)
+    except ValueError as error:
+        assert "simulator_state and metrics must be JSON objects" in str(error)
+    else:
+        raise AssertionError("Invalid checkpoint state shape was accepted")
+
+
 def test_checkpoint_payload_must_be_an_object(tmp_path: Path):
     path = tmp_path / "list.json"
     path.write_text("[]", encoding="utf-8")

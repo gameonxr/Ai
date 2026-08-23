@@ -55,6 +55,12 @@ class CheckpointManager:
             raise ValueError(f"Unsupported checkpoint version: {checkpoint_version}") from error
         if checkpoint_version != cls.CURRENT_VERSION:
             raise ValueError(f"Unsupported checkpoint version: {checkpoint_version}")
+        required_fields = ("run_id", "episode", "step", "current_time", "simulator_state", "metrics")
+        missing_fields = [field for field in required_fields if field not in payload]
+        if missing_fields:
+            raise ValueError(f"Checkpoint missing required fields: {', '.join(missing_fields)}")
+        if not isinstance(payload["simulator_state"], dict) or not isinstance(payload["metrics"], dict):
+            raise ValueError("Checkpoint simulator_state and metrics must be JSON objects")
         return Checkpoint(checkpoint_version, payload["run_id"], int(payload["episode"]), int(payload["step"]), float(payload["current_time"]), payload["simulator_state"], payload["metrics"], payload.get("metadata", {}), artifact_type, schema_version)
 
     @classmethod
