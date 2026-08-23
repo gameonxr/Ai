@@ -41,6 +41,8 @@ class SweepRunner:
     """Run a finite list of reproducible experiment cases in declaration order."""
 
     def __init__(self, sweep_id: str, manifest_dir: str | Path = "artifacts/runs", resume: bool = False):
+        if not isinstance(sweep_id, str) or not sweep_id.strip():
+            raise ValueError("sweep_id must be a non-empty string")
         self.sweep_id = sweep_id
         self.manifest_dir = Path(manifest_dir)
         self.resume = resume
@@ -62,15 +64,21 @@ class SweepRunner:
         resumed_cases = 0
         seen_ids: set[str] = set()
         for index, case in enumerate(case_list):
-            run_id = str(case.get("run_id", f"{self.sweep_id}-{index + 1}"))
+            if not isinstance(case, dict):
+                raise ValueError(f"sweep case {index} must be a JSON object")
+            run_id = case.get("run_id", f"{self.sweep_id}-{index + 1}")
+            if not isinstance(run_id, str) or not run_id.strip():
+                raise ValueError(f"sweep case {index} run_id must be a non-empty string")
             if run_id in seen_ids:
                 raise ValueError(f"duplicate sweep run_id: {run_id}")
             seen_ids.add(run_id)
-            simulator_config = str(case.get("config", case.get("simulator_config", "config/simulator_config.yaml")))
-            episodes = int(case.get("episodes", 1))
-            max_steps = int(case.get("max_steps", 100))
-            seed = case.get("seed")
-            checkpoint_every = int(case.get("checkpoint_every", 0))
+            simulator_config = case.get("config", case.get("simulator_config", "config/simulator_config.yaml"))
+            if not isinstance(simulator_config, str) or not simulator_config.strip():
+                raise ValueError(f"sweep case {run_id} config must be a non-empty string")
+            episodes = self._positive_int(case, "episodes", 1)
+            max_steps = self._positive_int(case, "max_steps", 100)
+            seed = self._optional_int(case, "seed")
+            checkpoint_every = self._nonnegative_int(case, "checkpoint_every", 0)
             metadata = {
                 "sweep_id": self.sweep_id,
                 "sweep_index": index,
@@ -89,6 +97,29 @@ class SweepRunner:
             runner = ExperimentRunner(simulator_config, run_id, self.manifest_dir, metadata=metadata)
             manifests.append(runner.run(episodes, max_steps, seed, checkpoint_every))
         return SweepResult(self.sweep_id, len(case_list), manifests, resumed_cases)
+
+    @staticmethod
+    def _positive_int(case: dict[str, Any], key: str, default: int) -> int:
+        value = case.get(key, default)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            raise ValueError(f"sweep case {case.get('run_id', '<generated>')} {key} must be a positive integer")
+        return value
+
+    @staticmethod
+    def _nonnegative_int(case: dict[str, Any], key: str, default: int) -> int:
+        value = case.get(key, default)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(f"sweep case {case.get('run_id', '<generated>')} {key} must be a non-negative integer")
+        return value
+
+    @staticmethod
+    def _optional_int(case: dict[str, Any], key: str) -> int | None:
+        value = case.get(key)
+        if value is None:
+            return None
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValueError(f"sweep case {case.get('run_id', '<generated>')} {key} must be an integer or null")
+        return value
 
     @staticmethod
     def _load_manifest(path: Path) -> RunManifest:

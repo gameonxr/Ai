@@ -69,3 +69,23 @@ def test_sweep_resume_rejects_mismatched_completed_manifest(tmp_path: Path):
     SweepRunner("resume-sweep", tmp_path).run([{"run_id": "resume-a", "seed": 12, "episodes": 1, "max_steps": 1}])
     with pytest.raises(ValueError, match="does not match"):
         SweepRunner("resume-sweep", tmp_path, resume=True).run([{"run_id": "resume-a", "seed": 12, "episodes": 2, "max_steps": 1}])
+
+
+def test_sweep_runner_rejects_invalid_case_types(tmp_path: Path):
+    runner = SweepRunner("strict", tmp_path)
+    invalid_cases = [
+        [{"run_id": "", "episodes": 1}],
+        [{"run_id": "bad", "episodes": 0}],
+        [{"run_id": "bad", "max_steps": 1.0}],
+        [{"run_id": "bad", "seed": True}],
+        [{"run_id": "bad", "checkpoint_every": -1}],
+        [{"run_id": "bad", "config": ""}],
+    ]
+    for cases in invalid_cases:
+        with pytest.raises(ValueError):
+            runner.run(cases)
+
+
+def test_sweep_runner_rejects_invalid_sweep_id(tmp_path: Path):
+    with pytest.raises(ValueError):
+        SweepRunner("", tmp_path)

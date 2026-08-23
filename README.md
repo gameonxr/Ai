@@ -150,6 +150,8 @@ The default settings live in `config/experiment_config.yaml`. Generated manifest
 ]
 ```
 
+Sweep inputs are validated before execution: IDs and config paths must be non-empty strings, episode and step counts must be positive integers, seeds must be integers or `null`, and checkpoint cadence must be non-negative.
+
 Run the sweep with:
 
 ```bash
