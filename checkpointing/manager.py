@@ -36,9 +36,19 @@ class CheckpointManager:
     @classmethod
     def load(cls, path: str | Path) -> Checkpoint:
         payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        artifact_type = payload.get("artifact_type", "checkpoint")
+        if artifact_type != "checkpoint":
+            raise ValueError(f"Unsupported checkpoint artifact type: {artifact_type}")
+        schema_version = payload.get("schema_version", 1)
+        try:
+            schema_version = int(schema_version)
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"Unsupported checkpoint schema version: {schema_version}") from error
+        if schema_version != 1:
+            raise ValueError(f"Unsupported checkpoint schema version: {schema_version}")
         if int(payload.get("version", -1)) != cls.CURRENT_VERSION:
             raise ValueError(f"Unsupported checkpoint version: {payload.get('version')}")
-        return Checkpoint(payload["version"], payload["run_id"], int(payload["episode"]), int(payload["step"]), float(payload["current_time"]), payload["simulator_state"], payload["metrics"], payload.get("metadata", {}), payload.get("artifact_type", "checkpoint"), int(payload.get("schema_version", 1)))
+        return Checkpoint(payload["version"], payload["run_id"], int(payload["episode"]), int(payload["step"]), float(payload["current_time"]), payload["simulator_state"], payload["metrics"], payload.get("metadata", {}), artifact_type, schema_version)
 
     @classmethod
     def restore(cls, simulator, path: str | Path) -> Checkpoint:

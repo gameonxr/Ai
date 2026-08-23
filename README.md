@@ -131,7 +131,7 @@ The complete workflow is demonstrated by:
 python examples/checkpoint_example.py
 ```
 
-`config/checkpoint_config.yaml` records the recommended checkpoint path and cadence. Checkpoints are emitted as `artifact_type: checkpoint` payloads with `schema_version: 1`, validated by version and joint set before restoration, and written atomically so an interrupted save does not leave a partial checkpoint for a later resume.
+`config/checkpoint_config.yaml` records the recommended checkpoint path and cadence. Checkpoints are emitted as `artifact_type: checkpoint` payloads with `schema_version: 1`, validated by artifact type, schema version, checkpoint version, and joint set before restoration, and written atomically so an interrupted save does not leave a partial checkpoint for a later resume. Older untyped checkpoints remain loadable because missing taxonomy fields default to `checkpoint` and schema version `1`; explicitly incompatible types or newer schema versions are rejected.
 
 ## Experiment orchestration
 

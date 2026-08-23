@@ -48,3 +48,41 @@ def test_checkpoint_persists_artifact_taxonomy(tmp_path: Path):
         assert loaded.schema_version == 1
     finally:
         simulator.shutdown()
+
+
+def test_legacy_untyped_checkpoint_defaults_to_current_taxonomy(tmp_path: Path):
+    simulator = Simulator("config/simulator_config.yaml")
+    try:
+        path = tmp_path / "legacy.json"
+        CheckpointManager.save(simulator, path, "legacy-checkpoint")
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload.pop("artifact_type")
+        payload.pop("schema_version")
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        loaded = CheckpointManager.load(path)
+        assert loaded.artifact_type == "checkpoint"
+        assert loaded.schema_version == 1
+    finally:
+        simulator.shutdown()
+
+
+def test_checkpoint_artifact_type_is_validated(tmp_path: Path):
+    path = tmp_path / "wrong-type.json"
+    path.write_text(json.dumps({"artifact_type": "evaluation", "schema_version": 1, "version": 1}), encoding="utf-8")
+    try:
+        CheckpointManager.load(path)
+    except ValueError as error:
+        assert "Unsupported checkpoint artifact type" in str(error)
+    else:
+        raise AssertionError("Non-checkpoint artifact was accepted")
+
+
+def test_checkpoint_schema_version_is_validated(tmp_path: Path):
+    path = tmp_path / "new-schema.json"
+    path.write_text(json.dumps({"artifact_type": "checkpoint", "schema_version": 2, "version": 1}), encoding="utf-8")
+    try:
+        CheckpointManager.load(path)
+    except ValueError as error:
+        assert "Unsupported checkpoint schema version" in str(error)
+    else:
+        raise AssertionError("Unsupported checkpoint schema was accepted")
