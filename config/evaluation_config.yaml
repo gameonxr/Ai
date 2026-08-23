@@ -1,0 +1,5 @@
+evaluation:
+  simulator_config: config/simulator_config.yaml
+  episodes: 5
+  max_steps: 100
+  seed: 42

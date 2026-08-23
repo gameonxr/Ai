@@ -56,7 +56,13 @@ The `training/` package keeps policies behind the same brain contract. A seeded 
 python examples/collect_rollouts.py
 ```
 
-For custom experiments, implement `Policy.act(observation) -> Action`, pass it to `Trainer`, and provide a reward function. `config/training_config.yaml` records the intended episode, seed, and policy defaults. The multi-agent baseline can be run with:
+For custom experiments, implement `Policy.act(observation) -> Action`, pass it to `Trainer`, and provide a reward function. `config/training_config.yaml` records the intended episode, seed, and policy defaults. `evaluation/` runs seeded policy episodes and returns aggregate mean, standard deviation, minimum, and maximum reward metrics. The example can be run with:
+
+```bash
+python examples/evaluate_policy.py
+```
+
+The multi-agent baseline can be run with:
 
 ```bash
 python examples/multi_agent_example.py
@@ -149,7 +155,7 @@ Each command returns structured JSON suitable for shell automation and CI logs. 
 
 ## Repository layout
 
-`simulator/` orchestrates the loop and configuration. `brain/` contains the abstract brain contract and dummy implementation. `body/` loads links and joints from YAML. `physics/` defines the backend abstraction and portable MuJoCo/Bullet boundaries. `sensors/` and `actuators/` provide modular components. `environment/` contains the basic floor/world model. `rendering/` provides the headless renderer interface and Matplotlib implementation. `training/` provides policy, trainer, and rollout interfaces. `agents/` provides the multi-agent coordinator. `recording/` provides episode recording and replay primitives. `robot/` provides the safe adapter contract. `vector_env/` provides batched independent environments. `checkpointing/` provides versioned resumable state. `observability/` provides structured events and metrics. `experiments/` provides run orchestration and manifests. `benchmarks/` provides reproducible performance reports. `config_validation/` provides canonical configuration diagnostics. `ai_body_simulator_resources/` bundles default YAML resources for installed distributions. `cli.py` exposes the unified operator CLI. `config/`, `examples/`, and `tests/` contain configuration, usage examples, and automated verification. Sensor transforms and actuator dynamics are covered by the reliability test suite.
+`simulator/` orchestrates the loop and configuration. `brain/` contains the abstract brain contract and dummy implementation. `body/` loads links and joints from YAML. `physics/` defines the backend abstraction and portable MuJoCo/Bullet boundaries. `sensors/` and `actuators/` provide modular components. `environment/` contains the basic floor/world model. `rendering/` provides the headless renderer interface and Matplotlib implementation. `training/` provides policy, trainer, and rollout interfaces. `agents/` provides the multi-agent coordinator. `recording/` provides episode recording and replay primitives. `robot/` provides the safe adapter contract. `vector_env/` provides batched independent environments. `checkpointing/` provides versioned resumable state. `observability/` provides structured events and metrics. `experiments/` provides run orchestration and manifests. `evaluation/` provides seeded policy evaluation and aggregate metrics. `benchmarks/` provides reproducible performance reports. `config_validation/` provides canonical configuration diagnostics. `ai_body_simulator_resources/` bundles default YAML resources for installed distributions. `cli.py` exposes the unified operator CLI. `config/`, `examples/`, and `tests/` contain configuration, usage examples, and automated verification. Sensor transforms and actuator dynamics are covered by the reliability test suite.
 
 ## Design constraints
 
