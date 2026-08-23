@@ -66,12 +66,19 @@ def load_dataset(path: str | Path) -> TrajectoryDataset:
     if not lines:
         raise ValueError("Trajectory dataset is empty")
     header = json.loads(lines[0])
+    if not isinstance(header, dict):
+        raise ValueError("Trajectory dataset header must be a JSON object")
     if header.get("type") != "metadata" or int(header.get("schema_version", -1)) != TrajectoryDatasetWriter.SCHEMA_VERSION:
         raise ValueError("Unsupported trajectory dataset schema")
+    metadata = header.get("metadata", {})
+    if not isinstance(metadata, dict):
+        raise ValueError("Trajectory dataset metadata must be a JSON object")
     transitions = []
     for line in lines[1:]:
         record = json.loads(line)
+        if not isinstance(record, dict):
+            raise ValueError("Trajectory transition must be a JSON object")
         if record.get("type") != "transition":
             raise ValueError("Unexpected trajectory record type")
         transitions.append(record)
-    return TrajectoryDataset(header.get("metadata", {}), transitions)
+    return TrajectoryDataset(metadata, transitions)
