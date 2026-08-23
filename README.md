@@ -78,7 +78,13 @@ python examples/multi_agent_example.py
 python examples/record_replay.py
 ```
 
-The recorder is intentionally separate from the simulator loop, so later storage formats or playback controls can be introduced without changing the brain or physics contracts.
+The recorder is intentionally separate from the simulator loop, so later storage formats or playback controls can be introduced without changing the brain or physics contracts. `datasets/` exports analysis-ready, versioned trajectory JSONL with metadata, observations, actions, rewards, termination flags, and per-step info:
+
+```bash
+python examples/export_dataset.py
+```
+
+`config/dataset_config.yaml` records the recommended dataset path and metadata fields.
 
 ## Robot adapter boundary
 
@@ -155,7 +161,7 @@ Each command returns structured JSON suitable for shell automation and CI logs. 
 
 ## Repository layout
 
-`simulator/` orchestrates the loop and configuration. `brain/` contains the abstract brain contract and dummy implementation. `body/` loads links and joints from YAML. `physics/` defines the backend abstraction and portable MuJoCo/Bullet boundaries. `sensors/` and `actuators/` provide modular components. `environment/` contains the basic floor/world model. `rendering/` provides the headless renderer interface and Matplotlib implementation. `training/` provides policy, trainer, and rollout interfaces. `agents/` provides the multi-agent coordinator. `recording/` provides episode recording and replay primitives. `robot/` provides the safe adapter contract. `vector_env/` provides batched independent environments. `checkpointing/` provides versioned resumable state. `observability/` provides structured events and metrics. `experiments/` provides run orchestration and manifests. `evaluation/` provides seeded policy evaluation and aggregate metrics. `benchmarks/` provides reproducible performance reports. `config_validation/` provides canonical configuration diagnostics. `ai_body_simulator_resources/` bundles default YAML resources for installed distributions. `cli.py` exposes the unified operator CLI. `config/`, `examples/`, and `tests/` contain configuration, usage examples, and automated verification. Sensor transforms and actuator dynamics are covered by the reliability test suite.
+`simulator/` orchestrates the loop and configuration. `brain/` contains the abstract brain contract and dummy implementation. `body/` loads links and joints from YAML. `physics/` defines the backend abstraction and portable MuJoCo/Bullet boundaries. `sensors/` and `actuators/` provide modular components. `environment/` contains the basic floor/world model. `rendering/` provides the headless renderer interface and Matplotlib implementation. `training/` provides policy, trainer, and rollout interfaces. `agents/` provides the multi-agent coordinator. `recording/` provides episode recording and replay primitives. `robot/` provides the safe adapter contract. `vector_env/` provides batched independent environments. `checkpointing/` provides versioned resumable state. `observability/` provides structured events and metrics. `experiments/` provides run orchestration and manifests. `evaluation/` provides seeded policy evaluation and aggregate metrics. `benchmarks/` provides reproducible performance reports. `datasets/` provides versioned trajectory export. `config_validation/` provides canonical configuration diagnostics. `ai_body_simulator_resources/` bundles default YAML resources for installed distributions. `cli.py` exposes the unified operator CLI. `config/`, `examples/`, and `tests/` contain configuration, usage examples, and automated verification. Sensor transforms and actuator dynamics are covered by the reliability test suite.
 
 ## Design constraints
 

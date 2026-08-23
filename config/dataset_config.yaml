@@ -1,0 +1,6 @@
+dataset:
+  path: artifacts/datasets/baseline.jsonl
+  schema_version: 1
+  metadata:
+    source: baseline-policy
+    seed: 42

@@ -1,0 +1,63 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+import json
+from pathlib import Path
+from typing import Any, Iterable
+
+
+@dataclass
+class TrajectoryDataset:
+    metadata: dict[str, Any]
+    transitions: list[dict[str, Any]] = field(default_factory=list)
+
+    @property
+    def size(self) -> int:
+        return len(self.transitions)
+
+
+class TrajectoryDatasetWriter:
+    """Write versioned observation/action/reward trajectories as JSONL."""
+
+    SCHEMA_VERSION = 1
+
+    def __init__(self, path: str | Path, metadata: dict[str, Any] | None = None):
+        self.path = Path(path)
+        self.metadata = metadata or {}
+        self._handle = None
+
+    def __enter__(self):
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._handle = self.path.open("w", encoding="utf-8")
+        self._write({"type": "metadata", "schema_version": self.SCHEMA_VERSION, "metadata": self.metadata})
+        return self
+
+    def append(self, observation, action, reward: float = 0.0, terminated: bool = False, info: dict[str, Any] | None = None) -> None:
+        if self._handle is None:
+            raise RuntimeError("TrajectoryDatasetWriter must be used as a context manager")
+        self._write({"type": "transition", "observation": observation.to_dict() if hasattr(observation, "to_dict") else observation, "action": action.to_dict() if hasattr(action, "to_dict") else action, "reward": float(reward), "terminated": bool(terminated), "info": info or {}})
+
+    def _write(self, payload: dict[str, Any]) -> None:
+        self._handle.write(json.dumps(payload, sort_keys=True) + "\n")
+        self._handle.flush()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self._handle is not None:
+            self._handle.close()
+        self._handle = None
+
+
+def load_dataset(path: str | Path) -> TrajectoryDataset:
+    lines = Path(path).read_text(encoding="utf-8").splitlines()
+    if not lines:
+        raise ValueError("Trajectory dataset is empty")
+    header = json.loads(lines[0])
+    if header.get("type") != "metadata" or int(header.get("schema_version", -1)) != TrajectoryDatasetWriter.SCHEMA_VERSION:
+        raise ValueError("Unsupported trajectory dataset schema")
+    transitions = []
+    for line in lines[1:]:
+        record = json.loads(line)
+        if record.get("type") != "transition":
+            raise ValueError("Unexpected trajectory record type")
+        transitions.append(record)
+    return TrajectoryDataset(header.get("metadata", {}), transitions)
