@@ -7,6 +7,10 @@ from statistics import mean
 from typing import Any
 
 
+KNOWN_ARTIFACT_TYPES = {"experiment_manifest", "evaluation", "benchmark", "health", "sweep"}
+SUPPORTED_SCHEMA_VERSION = 1
+
+
 @dataclass
 class ReportSummary:
     manifest_count: int
@@ -48,6 +52,10 @@ class ReportBuilder:
                 artifact_errors.append(str(path))
                 continue
             if not isinstance(payload, dict):
+                artifact_errors.append(str(path))
+                continue
+            artifact_type = payload.get("artifact_type")
+            if artifact_type in KNOWN_ARTIFACT_TYPES and payload.get("schema_version", SUPPORTED_SCHEMA_VERSION) != SUPPORTED_SCHEMA_VERSION:
                 artifact_errors.append(str(path))
                 continue
             artifacts.append(payload)

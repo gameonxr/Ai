@@ -127,3 +127,16 @@ def test_report_builder_aggregates_sweep_summaries(tmp_path: Path):
     markdown_text = markdown_path.read_text(encoding="utf-8")
     assert "Sweep artifacts: 1" in markdown_text
     assert "report-sweep" in markdown_text
+
+
+def test_report_builder_records_unsupported_known_schema(tmp_path: Path):
+    future = tmp_path / "future.json"
+    future.write_text(json.dumps({
+        "artifact_type": "benchmark",
+        "schema_version": 99,
+        "steps": 1,
+        "realtime_factor": 1.0,
+    }), encoding="utf-8")
+    summary = ReportBuilder().build(tmp_path)
+    assert summary.benchmark_count == 0
+    assert summary.artifact_errors == [str(future)]
