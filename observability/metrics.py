@@ -26,6 +26,14 @@ class SimulationMetrics:
         if invalid_action:
             self.invalid_actions += 1
 
+    def restore_snapshot(self, snapshot: dict) -> None:
+        """Restore persisted counters while keeping wall-clock timing local."""
+        for field_name in ("steps", "actions", "invalid_actions", "episodes"):
+            if field_name in snapshot:
+                setattr(self, field_name, int(snapshot[field_name]))
+        if "simulation_seconds" in snapshot:
+            self.simulation_seconds = float(snapshot["simulation_seconds"])
+
     @property
     def wall_seconds(self) -> float:
         return monotonic() - self.started_at

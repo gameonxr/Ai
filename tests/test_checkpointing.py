@@ -20,6 +20,8 @@ def test_checkpoint_round_trip_and_resume(tmp_path: Path):
     assert restored.metadata["seed"] == 12
     assert simulator.step_count == 4
     assert simulator.current_time == 0.02
+    assert simulator.metrics.steps == 4
+    assert simulator.metrics.simulation_seconds == 0.02
     assert simulator.physics.get_checkpoint_state() == expected_state
     simulator.shutdown()
 

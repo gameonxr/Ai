@@ -69,6 +69,7 @@ class CheckpointManager:
         simulator.physics.restore_checkpoint_state(checkpoint.simulator_state["physics"])
         simulator.current_time = checkpoint.current_time
         simulator.step_count = checkpoint.step
+        simulator.metrics.restore_snapshot(checkpoint.metrics)
         simulator.paused = bool(checkpoint.simulator_state.get("paused", False))
         for name, value in checkpoint.simulator_state.get("actuators", {}).items():
             if name in simulator.actuators:
