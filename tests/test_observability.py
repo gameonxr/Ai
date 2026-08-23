@@ -19,6 +19,20 @@ def test_metrics_counts_steps_actions_and_episodes():
     assert snapshot["simulation_seconds"] == 0.01
 
 
+def test_metrics_restore_snapshot_restores_counters_only():
+    metrics = SimulationMetrics()
+    metrics.reset_episode()
+    metrics.record_step(0.005, action_applied=True, invalid_action=True)
+    metrics.restore_snapshot({"steps": 8, "actions": 3, "invalid_actions": 2, "episodes": 4, "simulation_seconds": 0.04, "wall_seconds": 999.0})
+    snapshot = metrics.snapshot()
+    assert snapshot["steps"] == 8
+    assert snapshot["actions"] == 3
+    assert snapshot["invalid_actions"] == 2
+    assert snapshot["episodes"] == 4
+    assert snapshot["simulation_seconds"] == 0.04
+    assert snapshot["wall_seconds"] < 999.0
+
+
 def test_simulator_exposes_metrics_and_writes_json_logs():
     log_path = Path("logs/simulation.log")
     if log_path.exists():
