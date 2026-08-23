@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import json
+import os
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Any, Iterable
 
 
@@ -25,10 +27,13 @@ class TrajectoryDatasetWriter:
         self.path = Path(path)
         self.metadata = metadata or {}
         self._handle = None
+        self._temporary_path: Path | None = None
 
     def __enter__(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._handle = self.path.open("w", encoding="utf-8")
+        temporary = NamedTemporaryFile("w", encoding="utf-8", dir=self.path.parent, prefix=f".{self.path.name}.", suffix=".tmp", delete=False)
+        self._handle = temporary
+        self._temporary_path = Path(temporary.name)
         self._write({"type": "metadata", "schema_version": self.SCHEMA_VERSION, "metadata": self.metadata})
         return self
 
@@ -42,9 +47,18 @@ class TrajectoryDatasetWriter:
         self._handle.flush()
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if self._handle is not None:
-            self._handle.close()
+        handle = self._handle
+        temporary_path = self._temporary_path
         self._handle = None
+        self._temporary_path = None
+        if handle is None or temporary_path is None:
+            return
+        handle.close()
+        try:
+            if exc_type is None:
+                os.replace(temporary_path, self.path)
+        finally:
+            temporary_path.unlink(missing_ok=True)
 
 
 def load_dataset(path: str | Path) -> TrajectoryDataset:
