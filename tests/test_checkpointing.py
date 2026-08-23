@@ -66,6 +66,17 @@ def test_legacy_untyped_checkpoint_defaults_to_current_taxonomy(tmp_path: Path):
         simulator.shutdown()
 
 
+def test_checkpoint_payload_must_be_an_object(tmp_path: Path):
+    path = tmp_path / "list.json"
+    path.write_text("[]", encoding="utf-8")
+    try:
+        CheckpointManager.load(path)
+    except ValueError as error:
+        assert "Checkpoint payload must be a JSON object" in str(error)
+    else:
+        raise AssertionError("Non-object checkpoint payload was accepted")
+
+
 def test_checkpoint_artifact_type_is_validated(tmp_path: Path):
     path = tmp_path / "wrong-type.json"
     path.write_text(json.dumps({"artifact_type": "evaluation", "schema_version": 1, "version": 1}), encoding="utf-8")
