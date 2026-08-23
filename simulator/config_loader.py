@@ -16,7 +16,9 @@ class ConfigLoader:
         if not self.config_path.exists():
             raise FileNotFoundError(f"Configuration not found: {self.config_path}")
         with self.config_path.open(encoding="utf-8") as handle:
-            config = yaml.safe_load(handle) or {}
+            config = yaml.safe_load(handle)
+        if config is None:
+            config = {}
         self._validate_root(config)
         base = self.config_path.parent.parent if self.config_path.parent.name == "config" else self.config_path.parent
         for section, key in (("physics", "config_path"), ("body", "config_path"), ("sensors", "config_path"), ("actuators", "config_path")):
@@ -33,14 +35,23 @@ class ConfigLoader:
         if not path.exists():
             raise FileNotFoundError(f"Referenced configuration not found: {path}")
         with path.open(encoding="utf-8") as handle:
-            return yaml.safe_load(handle) or {}
+            config = yaml.safe_load(handle)
+        return {} if config is None else config
 
     def _validate_root(self, config: dict[str, Any]) -> None:
+        if not isinstance(config, dict):
+            raise ValueError("Configuration root must be a mapping")
         missing = [name for name in self.REQUIRED_SECTIONS if name not in config]
         if missing:
             raise ValueError(f"Missing configuration sections: {', '.join(missing)}")
-        timestep = float(config["simulator"].get("timestep", 0.005))
-        max_timestep = float(config["simulator"].get("max_timestep", 0.1))
+        invalid_sections = [name for name in self.REQUIRED_SECTIONS if not isinstance(config[name], dict)]
+        if invalid_sections:
+            raise ValueError(f"Configuration sections must be mappings: {', '.join(invalid_sections)}")
+        try:
+            timestep = float(config["simulator"].get("timestep", 0.005))
+            max_timestep = float(config["simulator"].get("max_timestep", 0.1))
+        except (TypeError, ValueError) as error:
+            raise ValueError("simulator timestep values must be numeric") from error
         if not 0 < timestep <= max_timestep:
             raise ValueError("simulator.timestep must be positive and <= max_timestep")
 
