@@ -64,9 +64,19 @@ python examples/multi_agent_example.py
 
 `MultiAgentCoordinator` owns one isolated `SimulationEnvironment` per named agent and advances them in a deterministic synchronization order. Agents exchange only standardized observations and actions; they do not share physics internals.
 
+## Recording and replay
+
+`recording/` captures standardized observations and actions as a metadata-prefixed JSONL episode file. The same action sequence can be replayed through `ReplayBrain` without granting the replay layer access to physics internals:
+
+```bash
+python examples/record_replay.py
+```
+
+The recorder is intentionally separate from the simulator loop, so later storage formats or playback controls can be introduced without changing the brain or physics contracts.
+
 ## Repository layout
 
-`simulator/` orchestrates the loop and configuration. `brain/` contains the abstract brain contract and dummy implementation. `body/` loads links and joints from YAML. `physics/` defines the backend abstraction and portable MuJoCo/Bullet boundaries. `sensors/` and `actuators/` provide modular components. `environment/` contains the basic floor/world model. `rendering/` provides the headless renderer interface and Matplotlib implementation. `training/` provides policy, trainer, and rollout interfaces. `agents/` provides the multi-agent coordinator. `config/`, `examples/`, and `tests/` contain configuration, usage examples, and automated verification.
+`simulator/` orchestrates the loop and configuration. `brain/` contains the abstract brain contract and dummy implementation. `body/` loads links and joints from YAML. `physics/` defines the backend abstraction and portable MuJoCo/Bullet boundaries. `sensors/` and `actuators/` provide modular components. `environment/` contains the basic floor/world model. `rendering/` provides the headless renderer interface and Matplotlib implementation. `training/` provides policy, trainer, and rollout interfaces. `agents/` provides the multi-agent coordinator. `recording/` provides episode recording and replay primitives. `config/`, `examples/`, and `tests/` contain configuration, usage examples, and automated verification.
 
 ## Design constraints
 
