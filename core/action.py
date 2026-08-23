@@ -19,8 +19,9 @@ class Action:
     def __post_init__(self) -> None:
         if not self.has_commands and not self.metadata.get("noop", False):
             raise ValueError("Action must specify at least one command")
-        if self.timestamp is not None and not np.isfinite(self.timestamp):
-            raise ValueError("Action timestamp must be finite")
+        if self.timestamp is not None:
+            if isinstance(self.timestamp, bool) or not isinstance(self.timestamp, (int, float, np.integer, np.floating)) or not np.isfinite(self.timestamp):
+                raise ValueError("Action timestamp must be a finite number")
 
     @property
     def has_commands(self) -> bool:

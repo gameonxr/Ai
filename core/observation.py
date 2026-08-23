@@ -28,8 +28,8 @@ class Observation:
     info: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if self.timestamp is None or not np.isfinite(self.timestamp):
-            raise ValueError("Observation requires a finite timestamp")
+        if self.timestamp is None or isinstance(self.timestamp, bool) or not isinstance(self.timestamp, (int, float, np.integer, np.floating)) or not np.isfinite(self.timestamp):
+            raise ValueError("Observation requires a finite numeric timestamp")
 
     def to_dict(self) -> dict:
         return _json_safe({"timestamp": self.timestamp, "proprioception": self.proprioception, "vision": self.vision, "depth": self.depth, "imu": self.imu, "touch": self.touch, "info": self.info})

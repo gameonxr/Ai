@@ -15,3 +15,11 @@ def test_observation_json_is_serializable():
 
 def test_invalid_timestamp_rejected():
     with pytest.raises(ValueError): Observation(math.nan)
+
+
+def test_timestamp_must_be_numeric():
+    for value in (True, "0.5"):
+        with pytest.raises(ValueError, match="finite"):
+            Observation(value)  # type: ignore[arg-type]
+        with pytest.raises(ValueError, match="finite"):
+            Action.noop(timestamp=value)  # type: ignore[arg-type]
