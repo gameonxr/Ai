@@ -11,6 +11,13 @@ def test_config_loader_resolves_references():
     assert config["physics"]["loaded"]["physics"]["gravity"][2] == -9.81
 
 
+def test_config_loader_rejects_malformed_root_yaml(tmp_path: Path):
+    path = tmp_path / "invalid.yaml"
+    path.write_text("simulator: [\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="Invalid YAML configuration"):
+        ConfigLoader(path).load()
+
+
 def test_config_loader_rejects_non_mapping_root(tmp_path: Path):
     path = tmp_path / "list.yaml"
     path.write_text("[]\n", encoding="utf-8")
@@ -29,6 +36,14 @@ def test_config_loader_rejects_non_numeric_timestep(tmp_path: Path):
     path = tmp_path / "timestep.yaml"
     path.write_text("simulator: {timestep: fast}\nphysics: {}\nbody: {}\nsensors: {}\nactuators: {}\n", encoding="utf-8")
     with pytest.raises(ValueError, match="simulator timestep values must be numeric"):
+        ConfigLoader(path).load()
+
+
+def test_config_loader_rejects_malformed_reference_yaml(tmp_path: Path):
+    (tmp_path / "physics.yaml").write_text("physics: [\n", encoding="utf-8")
+    path = tmp_path / "config.yaml"
+    path.write_text("simulator: {}\nphysics: {config_path: physics.yaml}\nbody: {}\nsensors: {}\nactuators: {}\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="Invalid YAML referenced configuration"):
         ConfigLoader(path).load()
 
 

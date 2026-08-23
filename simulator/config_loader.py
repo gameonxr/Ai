@@ -15,8 +15,11 @@ class ConfigLoader:
     def load(self) -> dict[str, Any]:
         if not self.config_path.exists():
             raise FileNotFoundError(f"Configuration not found: {self.config_path}")
-        with self.config_path.open(encoding="utf-8") as handle:
-            config = yaml.safe_load(handle)
+        try:
+            with self.config_path.open(encoding="utf-8") as handle:
+                config = yaml.safe_load(handle)
+        except yaml.YAMLError as error:
+            raise ValueError(f"Invalid YAML configuration: {self.config_path}") from error
         if config is None:
             config = {}
         self._validate_root(config)
@@ -34,8 +37,11 @@ class ConfigLoader:
     def _read_yaml(path: Path) -> dict[str, Any]:
         if not path.exists():
             raise FileNotFoundError(f"Referenced configuration not found: {path}")
-        with path.open(encoding="utf-8") as handle:
-            config = yaml.safe_load(handle)
+        try:
+            with path.open(encoding="utf-8") as handle:
+                config = yaml.safe_load(handle)
+        except yaml.YAMLError as error:
+            raise ValueError(f"Invalid YAML referenced configuration: {path}") from error
         if config is None:
             return {}
         if not isinstance(config, dict):
