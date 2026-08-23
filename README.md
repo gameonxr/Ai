@@ -178,12 +178,23 @@ ai-sim report --manifest-dir artifacts --json-out artifacts/report.json --markdo
 
 Benchmark artifacts record the configuration path, seed, step count, simulated and wall-clock duration, real-time factor, and final simulator state.
 
+## Runtime health diagnostics
+
+`health.py` checks the canonical configuration and required/optional runtime dependencies. Persist a snapshot when collecting reproducibility evidence for a run:
+
+```bash
+ai-sim health --json-out artifacts/health/baseline.json
+```
+
+The resulting `artifact_type: health` JSON can be included automatically by `ai-sim report --manifest-dir artifacts`, which reports the number of snapshots and healthy snapshots alongside experiment, evaluation, and benchmark summaries.
+
 ## Unified CLI
 
 After installing the package, the `ai-sim` command provides one operator entry point for common workflows:
 
 ```bash
 ai-sim validate config/simulator_config.yaml
+ai-sim health --json-out artifacts/health/baseline.json
 ai-sim benchmark --steps 1000 --seed 42 --json-out artifacts/benchmarks/baseline.json
 ai-sim run --run-id baseline --episodes 3 --max-steps 100
 ai-sim sweep --cases config/sweep_cases.json --sweep-id baseline-seeds --manifest-dir artifacts/runs --json-out artifacts/sweeps/baseline-seeds.json

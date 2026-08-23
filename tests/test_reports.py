@@ -86,3 +86,16 @@ def test_report_builder_aggregates_benchmark_artifacts(tmp_path: Path):
     markdown_text = markdown_path.read_text(encoding="utf-8")
     assert "Benchmark artifacts: 1" in markdown_text
     assert "Realtime factor" in markdown_text
+
+
+def test_report_builder_aggregates_health_artifacts(tmp_path: Path):
+    health_path = tmp_path / "health" / "snapshot.json"
+    assert main(["health", "--json-out", str(health_path)]) == 0
+    summary = ReportBuilder().build(tmp_path)
+    assert summary.health_count == 1
+    assert summary.healthy_count == 1
+    markdown_path = tmp_path / "health-report.md"
+    ReportBuilder().write_markdown(summary, markdown_path)
+    markdown_text = markdown_path.read_text(encoding="utf-8")
+    assert "Health artifacts: 1" in markdown_text
+    assert "Healthy snapshots: 1" in markdown_text

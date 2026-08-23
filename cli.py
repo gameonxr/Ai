@@ -37,6 +37,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     health = subparsers.add_parser("health", help="report runtime and dependency health")
     health.add_argument("--config", default=default_simulator_config())
+    health.add_argument("--json-out", help="write a health snapshot artifact")
 
     report = subparsers.add_parser("report", help="aggregate experiment manifests")
     report.add_argument("--manifest-dir", default="artifacts/runs")
@@ -85,6 +86,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "health":
         report = collect_health(args.config)
+        if args.json_out:
+            output = Path(args.json_out)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(json.dumps({"artifact_type": "health", "config_path": args.config, **report}, indent=2, sort_keys=True), encoding="utf-8")
         print(json.dumps(report, indent=2, sort_keys=True))
         return 0 if report["healthy"] else 1
     if args.command == "report":

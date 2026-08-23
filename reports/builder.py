@@ -23,6 +23,9 @@ class ReportSummary:
     benchmark_count: int = 0
     mean_realtime_factor: float = 0.0
     benchmarks: list[dict[str, Any]] = field(default_factory=list)
+    health_count: int = 0
+    healthy_count: int = 0
+    health_reports: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -36,7 +39,8 @@ class ReportBuilder:
         artifacts = [json.loads(path.read_text(encoding="utf-8")) for path in paths]
         evaluations = [item for item in artifacts if item.get("artifact_type") == "evaluation"]
         benchmarks = [item for item in artifacts if item.get("artifact_type") == "benchmark"]
-        manifests = [item for item in artifacts if item.get("artifact_type") not in {"evaluation", "benchmark", "sweep"} and "status" in item]
+        health_reports = [item for item in artifacts if item.get("artifact_type") == "health"]
+        manifests = [item for item in artifacts if item.get("artifact_type") not in {"evaluation", "benchmark", "health", "sweep"} and "status" in item]
         completed = [item for item in manifests if item.get("status") == "completed"]
         failed = [item for item in manifests if item.get("status") == "failed"]
         episodes = [episode for item in manifests for episode in item.get("metrics", [])]
@@ -47,7 +51,8 @@ class ReportBuilder:
         run_rows = [{"run_id": item.get("run_id"), "status": item.get("status"), "episodes_completed": item.get("episodes_completed", 0), "total_steps": item.get("total_steps", 0), "metadata": item.get("metadata", {})} for item in manifests]
         evaluation_rows = [{"config_path": item.get("config_path"), "seed": item.get("seed"), "episodes": item.get("episodes", 0), "total_steps": item.get("total_steps", 0), "mean_reward": item.get("mean_reward", 0.0), "mean_steps": item.get("mean_steps", 0.0)} for item in evaluations]
         benchmark_rows = [{"config_path": item.get("config_path"), "seed": item.get("seed"), "steps": item.get("steps", 0), "simulation_seconds": item.get("simulation_seconds", 0.0), "wall_seconds": item.get("wall_seconds", 0.0), "realtime_factor": item.get("realtime_factor", 0.0)} for item in benchmarks]
-        return ReportSummary(len(manifests), len(completed), len(failed), len(episodes), sum(steps), mean(rewards) if rewards else 0.0, mean(steps) if steps else 0.0, run_rows, len(evaluations), mean(evaluation_rewards) if evaluation_rewards else 0.0, evaluation_rows, len(benchmarks), mean(realtime_factors) if realtime_factors else 0.0, benchmark_rows)
+        health_rows = [{"config_path": item.get("config_path"), "healthy": item.get("healthy", False), "python": item.get("python"), "platform": item.get("platform")} for item in health_reports]
+        return ReportSummary(len(manifests), len(completed), len(failed), len(episodes), sum(steps), mean(rewards) if rewards else 0.0, mean(steps) if steps else 0.0, run_rows, len(evaluations), mean(evaluation_rewards) if evaluation_rewards else 0.0, evaluation_rows, len(benchmarks), mean(realtime_factors) if realtime_factors else 0.0, benchmark_rows, len(health_reports), sum(item.get("healthy", False) for item in health_reports), health_rows)
 
     def write_json(self, summary: ReportSummary, path: str | Path) -> None:
         output = Path(path)
@@ -66,4 +71,8 @@ class ReportBuilder:
         if summary.benchmarks:
             lines.extend(["", "| Benchmark config | Seed | Steps | Sim seconds | Wall seconds | Realtime factor |", "|---|---:|---:|---:|---:|---:|"])
             lines.extend(f"| {item['config_path']} | {item['seed']} | {item['steps']} | {item['simulation_seconds']:.4f} | {item['wall_seconds']:.4f} | {item['realtime_factor']:.4f} |" for item in summary.benchmarks)
+        lines.extend(["", f"- Health artifacts: {summary.health_count}", f"- Healthy snapshots: {summary.healthy_count}"])
+        if summary.health_reports:
+            lines.extend(["", "| Health config | Healthy | Python | Platform |", "|---|:---:|---|---|"])
+            lines.extend(f"| {item['config_path']} | {item['healthy']} | {item['python']} | {item['platform']} |" for item in summary.health_reports)
         output.write_text("\n".join(lines) + "\n", encoding="utf-8")
