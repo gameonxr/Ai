@@ -30,3 +30,11 @@ def test_config_loader_rejects_non_numeric_timestep(tmp_path: Path):
     path.write_text("simulator: {timestep: fast}\nphysics: {}\nbody: {}\nsensors: {}\nactuators: {}\n", encoding="utf-8")
     with pytest.raises(ValueError, match="simulator timestep values must be numeric"):
         ConfigLoader(path).load()
+
+
+def test_config_loader_rejects_non_mapping_reference(tmp_path: Path):
+    (tmp_path / "physics.yaml").write_text("[]\n", encoding="utf-8")
+    path = tmp_path / "config.yaml"
+    path.write_text("simulator: {}\nphysics: {config_path: physics.yaml}\nbody: {}\nsensors: {}\nactuators: {}\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="Referenced configuration must be a mapping"):
+        ConfigLoader(path).load()

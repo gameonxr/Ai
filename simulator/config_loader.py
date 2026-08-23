@@ -36,7 +36,11 @@ class ConfigLoader:
             raise FileNotFoundError(f"Referenced configuration not found: {path}")
         with path.open(encoding="utf-8") as handle:
             config = yaml.safe_load(handle)
-        return {} if config is None else config
+        if config is None:
+            return {}
+        if not isinstance(config, dict):
+            raise ValueError(f"Referenced configuration must be a mapping: {path}")
+        return config
 
     def _validate_root(self, config: dict[str, Any]) -> None:
         if not isinstance(config, dict):
