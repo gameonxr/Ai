@@ -3,6 +3,7 @@ import numpy as np
 from body import BodyLoader
 from brain import BrainInterface
 from actuators.actuator_registry import build_actuators
+from actuators.actuator_controller import ActuatorController
 from core.validator import ActionValidator
 from environment.world import World
 from physics import create_physics_engine
@@ -30,6 +31,7 @@ class Simulator:
         actuator_cfg = self.config["actuators"].get("loaded", {}).get("actuators", self.config["actuators"])
         self.sensors = build_sensors(sensor_cfg)
         self.actuators = build_actuators(self.body.joints, actuator_cfg)
+        self.actuator_controller = ActuatorController(self.actuators)
         self.validator = ActionValidator(self.actuators, self.config["simulator"])
         self.observation_builder = ObservationBuilder(self.sensors)
         rendering_cfg = self.config.get("rendering", {})
@@ -53,6 +55,7 @@ class Simulator:
         if seed is not None:
             np.random.seed(seed)
         self.physics.reset(seed)
+        self.actuator_controller.reset()
         self.current_time = 0.0
         self.step_count = 0
         self.paused = False
@@ -76,7 +79,7 @@ class Simulator:
                 self.brain.observe(observation)
                 self.brain.decide()
                 valid, action, errors = self.validator.validate(self.brain.get_action())
-                self.physics.apply_action(action)
+                self.actuator_controller.apply(self.physics, action, self.timestep)
                 if errors and self.config["simulator"].get("debug", False):
                     print(f"Invalid action: {errors}")
             self.current_time += self.timestep
