@@ -6,7 +6,7 @@ from pathlib import Path
 from statistics import mean
 from typing import Any
 
-from artifact_io import write_json_atomic
+from artifact_io import write_json_atomic, write_text_atomic
 
 
 KNOWN_ARTIFACT_TYPES = {"experiment_manifest", "evaluation", "benchmark", "health", "sweep"}
@@ -84,8 +84,6 @@ class ReportBuilder:
         write_json_atomic(summary.to_dict(), path)
 
     def write_markdown(self, summary: ReportSummary, path: str | Path) -> None:
-        output = Path(path)
-        output.parent.mkdir(parents=True, exist_ok=True)
         lines = ["# Experiment Report", "", f"- Manifest count: {summary.manifest_count}", f"- Completed runs: {summary.completed_runs}", f"- Failed runs: {summary.failed_runs}", f"- Total episodes: {summary.total_episodes}", f"- Total steps: {summary.total_steps}", f"- Mean reward: {summary.mean_reward:.4f}", f"- Mean steps per episode: {summary.mean_steps_per_episode:.4f}", f"- Evaluation artifacts: {summary.evaluation_count}", f"- Mean evaluation reward: {summary.mean_evaluation_reward:.4f}", f"- Artifact errors: {len(summary.artifact_errors)}", "", "| Run | Status | Episodes | Steps |", "|---|---|---:|---:|"]
         lines.extend(f"| {run['run_id']} | {run['status']} | {run['episodes_completed']} | {run['total_steps']} |" for run in summary.runs)
         if summary.evaluations:
@@ -103,4 +101,4 @@ class ReportBuilder:
         if summary.sweeps:
             lines.extend(["", "| Sweep | Requested | Completed | Resumed |", "|---|---:|---:|---:|"])
             lines.extend(f"| {item['sweep_id']} | {item['cases_requested']} | {item['cases_completed']} | {item['resumed_cases']} |" for item in summary.sweeps)
-        output.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        write_text_atomic("\n".join(lines) + "\n", path)
