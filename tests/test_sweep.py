@@ -30,12 +30,14 @@ def test_sweep_runner_loads_json_cases_and_cli(capsys, tmp_path: Path):
         {"run_id": "cli-sweep-a", "seed": 3, "episodes": 1, "max_steps": 1},
         {"run_id": "cli-sweep-b", "seed": 4, "episodes": 1, "max_steps": 1},
     ]), encoding="utf-8")
-    assert main(["sweep", "--cases", str(cases_path), "--sweep-id", "cli-sweep", "--manifest-dir", str(tmp_path / "runs")]) == 0
+    summary_path = tmp_path / "sweep-summary.json"
+    assert main(["sweep", "--cases", str(cases_path), "--sweep-id", "cli-sweep", "--manifest-dir", str(tmp_path / "runs"), "--json-out", str(summary_path)]) == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["artifact_type"] == "sweep"
     assert payload["cases_requested"] == 2
     assert payload["cases_completed"] == 2
     assert (tmp_path / "runs" / "cli-sweep-a.json").exists()
+    assert json.loads(summary_path.read_text(encoding="utf-8"))["artifact_type"] == "sweep"
 
     report = ReportBuilder().build(tmp_path / "runs")
     assert report.runs[0]["metadata"]["sweep_id"] == "cli-sweep"

@@ -54,6 +54,7 @@ def build_parser() -> argparse.ArgumentParser:
     sweep.add_argument("--cases", required=True, help="JSON file containing a non-empty list of cases")
     sweep.add_argument("--sweep-id", default="sweep")
     sweep.add_argument("--manifest-dir", default="artifacts/runs")
+    sweep.add_argument("--json-out", help="write the sweep summary artifact")
 
     run = subparsers.add_parser("run", help="run seeded experiment episodes")
     run.add_argument("--config", default=default_simulator_config())
@@ -102,6 +103,8 @@ def main(argv: list[str] | None = None) -> int:
             simulator.shutdown()
     if args.command == "sweep":
         result = SweepRunner(args.sweep_id, args.manifest_dir).run_file(args.cases)
+        if args.json_out:
+            result.write_json(args.json_out)
         print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
         return 0
     manifest = ExperimentRunner(args.config, args.run_id, args.manifest_dir).run(args.episodes, args.max_steps, args.seed, args.checkpoint_every)

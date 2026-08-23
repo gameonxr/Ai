@@ -153,10 +153,10 @@ The default settings live in `config/experiment_config.yaml`. Generated manifest
 Run the sweep with:
 
 ```bash
-ai-sim sweep --cases config/sweep_cases.json --sweep-id baseline-seeds --manifest-dir artifacts/runs
+ai-sim sweep --cases config/sweep_cases.json --sweep-id baseline-seeds --manifest-dir artifacts/runs --json-out artifacts/sweeps/baseline-seeds.json
 ```
 
-Each generated manifest records `sweep_id`, declaration index, and non-runtime parameter values under `metadata.parameters`, so the report command can compare the resulting runs without changing the simulator or brain contracts.
+Each generated manifest records `sweep_id`, declaration index, and non-runtime parameter values under `metadata.parameters`, so the report command can compare the resulting runs without changing the simulator or brain contracts. With `--json-out`, the sweep command also persists a compact `artifact_type: sweep` summary listing requested/completed cases and their manifest IDs; this summary is intentionally ignored as a run manifest when reports scan the directory.
 
 ## Benchmarking
 
@@ -176,7 +176,7 @@ After installing the package, the `ai-sim` command provides one operator entry p
 ai-sim validate config/simulator_config.yaml
 ai-sim benchmark --steps 1000 --seed 42
 ai-sim run --run-id baseline --episodes 3 --max-steps 100
-ai-sim sweep --cases config/sweep_cases.json --sweep-id baseline-seeds --manifest-dir artifacts/runs
+ai-sim sweep --cases config/sweep_cases.json --sweep-id baseline-seeds --manifest-dir artifacts/runs --json-out artifacts/sweeps/baseline-seeds.json
 ai-sim evaluate --episodes 5 --max-steps 100 --json-out artifacts/evaluations/baseline.json
 ai-sim report --manifest-dir artifacts --json-out artifacts/report.json --markdown-out artifacts/report.md
 ```

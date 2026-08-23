@@ -29,6 +29,11 @@ class SweepResult:
             "manifests": [manifest.run_id for manifest in self.manifests],
         }
 
+    def write_json(self, path: str | Path) -> None:
+        output = Path(path)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(self.to_dict(), indent=2, sort_keys=True), encoding="utf-8")
+
 
 class SweepRunner:
     """Run a finite list of reproducible experiment cases in declaration order."""
