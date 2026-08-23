@@ -6,5 +6,8 @@ venv/
 *.egg-info/
 .coverage
 htmlcov/
+coverage.xml
+build/
+dist/
 logs/
 .DS_Store
