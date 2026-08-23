@@ -4,9 +4,9 @@ AI Body Simulator is a **brain-agnostic, deterministic humanoid simulation found
 
 > **Core loop:** observe → think → act → physics → observe.
 
-## Phase 1 scope
+## Current scope
 
-This repository implements the Phase 1 foundation described in `AI_BODY_SIMULATOR_SPEC.md`: a configurable 13-DOF humanoid body, YAML configuration loading, a physics abstraction with MuJoCo/Bullet-compatible backend boundaries, modular proprioception/IMU/vision/touch sensors, validated motor actions, deterministic stepping, pause/resume, examples, and pytest coverage. Rendering, training, multi-agent support, recording, and external AI connections are intentionally deferred.
+This repository implements the Phase 1 foundation described in `AI_BODY_SIMULATOR_SPEC.md`: a configurable 13-DOF humanoid body, YAML configuration loading, a physics abstraction with MuJoCo/Bullet-compatible backend boundaries, modular proprioception/IMU/vision/touch sensors, validated motor actions, deterministic stepping, pause/resume, examples, and pytest coverage. Phase 2 adds an opt-in, headless Matplotlib renderer and a stable renderer interface for debugging and visualization. Training, multi-agent support, recording, and external AI connections remain deferred.
 
 ## Quick start
 
@@ -16,9 +16,19 @@ python3 -m venv .venv
 pip install -r requirements.txt
 pytest -q
 python examples/dummy_brain_example.py
+python examples/render_simulation.py
 ```
 
-The default configuration is `config/simulator_config.yaml`. It uses the MuJoCo backend boundary with a portable deterministic implementation for headless Phase 1 execution; the public backend interface is isolated so a native engine implementation can be introduced without changing the simulator or brain APIs.
+The default configuration is `config/simulator_config.yaml`. It uses the MuJoCo backend boundary with a portable deterministic implementation for headless execution; the public backend interface is isolated so a native engine implementation can be introduced without changing the simulator or brain APIs. Rendering is disabled by default and can be enabled in YAML with `rendering.enabled: true`.
+
+To render the current simulator state from Python, first set `rendering.enabled: true` in `config/simulator_config.yaml`, then call:
+
+```python
+sim = Simulator("config/simulator_config.yaml")
+sim.reset(seed=42)
+sim.render("artifacts/body.png")
+sim.shutdown()
+```
 
 ## Public API
 
@@ -40,7 +50,7 @@ The brain receives only `core.Observation` and returns only `core.Action`. `Acti
 
 ## Repository layout
 
-`simulator/` orchestrates the loop and configuration. `brain/` contains the abstract brain contract and dummy implementation. `body/` loads links and joints from YAML. `physics/` defines the backend abstraction and portable MuJoCo/Bullet boundaries. `sensors/` and `actuators/` provide modular components. `environment/` contains the basic floor/world model. `config/`, `examples/`, and `tests/` contain configuration, usage examples, and automated verification.
+`simulator/` orchestrates the loop and configuration. `brain/` contains the abstract brain contract and dummy implementation. `body/` loads links and joints from YAML. `physics/` defines the backend abstraction and portable MuJoCo/Bullet boundaries. `sensors/` and `actuators/` provide modular components. `environment/` contains the basic floor/world model. `rendering/` provides the headless renderer interface and Matplotlib implementation. `config/`, `examples/`, and `tests/` contain configuration, usage examples, and automated verification.
 
 ## Design constraints
 

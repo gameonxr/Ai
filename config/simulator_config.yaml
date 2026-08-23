@@ -19,6 +19,14 @@ environment:
   floor_enabled: true
   floor_friction: 0.5
   floor_size: [10, 10]
+rendering:
+  enabled: false
+  renderer: matplotlib
+  width: 640
+  height: 640
+  dpi: 100
+  show_axes: true
+  label_links: false
 logging:
   level: INFO
   file: logs/simulation.log

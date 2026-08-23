@@ -8,6 +8,7 @@ from environment.world import World
 from physics import create_physics_engine
 from sensors.observation_builder import ObservationBuilder
 from sensors.sensor_registry import build_sensors
+from rendering import create_renderer
 from .config_loader import ConfigLoader
 
 
@@ -31,6 +32,8 @@ class Simulator:
         self.actuators = build_actuators(self.body.joints, actuator_cfg)
         self.validator = ActionValidator(self.actuators, self.config["simulator"])
         self.observation_builder = ObservationBuilder(self.sensors)
+        rendering_cfg = self.config.get("rendering", {})
+        self.renderer = create_renderer(rendering_cfg.get("renderer", "matplotlib"), rendering_cfg) if rendering_cfg.get("enabled", False) else None
         self.brain: BrainInterface | None = None
         self.current_time = 0.0
         self.step_count = 0
@@ -86,7 +89,15 @@ class Simulator:
     def get_state(self) -> dict:
         return {"current_time": self.current_time, "step_count": self.step_count, "paused": self.paused, "physics_state": self.physics.get_body_state()}
 
+    def render(self, output_path: str | Path | None = None):
+        """Render the current state when rendering is enabled in YAML."""
+        if self.renderer is None:
+            raise RuntimeError("Rendering is disabled; set rendering.enabled to true")
+        return self.renderer.render(self.body, self.physics.get_body_state(), output_path)
+
     def shutdown(self) -> None:
         if self.brain:
             self.brain.shutdown()
+        if self.renderer:
+            self.renderer.close()
         self.physics.shutdown()
