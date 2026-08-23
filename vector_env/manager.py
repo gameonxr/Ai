@@ -27,8 +27,8 @@ class VectorizedSimulator:
     """Manage independent simulator instances through batched reset and step calls."""
 
     def __init__(self, config_path: str = "config/simulator_config.yaml", num_envs: int = 1):
-        if num_envs < 1:
-            raise ValueError("num_envs must be >= 1")
+        if isinstance(num_envs, bool) or not isinstance(num_envs, int) or num_envs < 1:
+            raise ValueError("num_envs must be a positive integer")
         self.envs = [Simulator(config_path) for _ in range(num_envs)]
         self._brains = [_ActionQueueBrain() for _ in self.envs]
         for simulator, brain in zip(self.envs, self._brains):
