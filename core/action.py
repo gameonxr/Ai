@@ -19,6 +19,9 @@ class Action:
     def __post_init__(self) -> None:
         if not isinstance(self.metadata, dict):
             raise ValueError("Action metadata must be a JSON object")
+        for field_name in ("joint_targets", "motor_commands", "gripper_commands", "forces", "torques"):
+            if getattr(self, field_name) is not None and not isinstance(getattr(self, field_name), dict):
+                raise ValueError(f"Action {field_name} must be a JSON object")
         if not self.has_commands and not self.metadata.get("noop", False):
             raise ValueError("Action must specify at least one command")
         if self.timestamp is not None:

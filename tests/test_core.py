@@ -30,6 +30,12 @@ def test_action_metadata_must_be_an_object():
         Action(joint_targets={"neck": 0.1}, metadata=[])  # type: ignore[arg-type]
 
 
+def test_action_commands_must_be_objects():
+    for field_name in ("joint_targets", "motor_commands", "gripper_commands", "forces", "torques"):
+        with pytest.raises(ValueError, match=f"Action {field_name} must be a JSON object"):
+            Action(**{field_name: []})  # type: ignore[arg-type]
+
+
 def test_observation_info_must_be_an_object():
     with pytest.raises(ValueError, match="Observation info must be a JSON object"):
         Observation(0.0, info=[])  # type: ignore[arg-type]
