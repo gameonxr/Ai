@@ -67,6 +67,10 @@ class ConfigLoader:
 
     @staticmethod
     def merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(base, dict):
+            raise ValueError("Configuration merge base must be a mapping")
+        if not isinstance(override, dict):
+            raise ValueError("Configuration merge override must be a mapping")
         result = copy.deepcopy(base)
         for key, value in override.items():
             if isinstance(value, dict) and isinstance(result.get(key), dict):
