@@ -10,6 +10,7 @@ from physics import create_physics_engine
 from sensors.observation_builder import ObservationBuilder
 from sensors.sensor_registry import build_sensors
 from rendering import create_renderer
+from observability import SimulationMetrics, configure_logging, log_event
 from .config_loader import ConfigLoader
 
 
@@ -19,6 +20,9 @@ class Simulator:
     def __init__(self, config_path: str = "config/simulator_config.yaml"):
         self.config_path = Path(config_path).resolve()
         self.config = ConfigLoader(self.config_path).load()
+        logging_cfg = self.config.get("logging", {})
+        self.logger = configure_logging(logging_cfg.get("level", "INFO"), logging_cfg.get("file"))
+        self.metrics = SimulationMetrics()
         self.timestep = float(self.config["simulator"].get("timestep", 0.005))
         body_path = self._path_from_config("body")
         self.body = BodyLoader.load(body_path)
@@ -41,6 +45,7 @@ class Simulator:
         self.step_count = 0
         self.paused = False
         self.running = False
+        log_event(self.logger, 20, "simulator_initialized", {"engine": engine_name, "dof": self.body.dof, "timestep": self.timestep})
 
     def _path_from_config(self, section: str) -> Path:
         path = Path(self.config[section]["config_path"])
@@ -56,6 +61,8 @@ class Simulator:
             np.random.seed(seed)
         self.physics.reset(seed)
         self.actuator_controller.reset()
+        self.metrics.reset_episode()
+        log_event(self.logger, 20, "episode_reset", {"seed": seed})
         self.current_time = 0.0
         self.step_count = 0
         self.paused = False
@@ -75,22 +82,29 @@ class Simulator:
             state = self.physics.get_body_state()
             state["contacts"] = self.physics.get_contact_info()
             observation = self.observation_builder.build(state, self.current_time)
+            action_applied = False
+            invalid_action = False
             if self.brain:
                 self.brain.observe(observation)
                 self.brain.decide()
                 valid, action, errors = self.validator.validate(self.brain.get_action())
+                invalid_action = bool(errors)
                 self.actuator_controller.apply(self.physics, action, self.timestep)
-                if errors and self.config["simulator"].get("debug", False):
-                    print(f"Invalid action: {errors}")
+                action_applied = action.has_commands
+                if errors:
+                    log_event(self.logger, 30, "invalid_action", {"errors": errors})
+                    if self.config["simulator"].get("debug", False):
+                        print(f"Invalid action: {errors}")
             self.current_time += self.timestep
             self.step_count += 1
+            self.metrics.record_step(self.timestep, action_applied, invalid_action)
         return observation
 
     def pause(self) -> None: self.paused = True
     def resume(self) -> None: self.paused = False
 
     def get_state(self) -> dict:
-        return {"current_time": self.current_time, "step_count": self.step_count, "paused": self.paused, "physics_state": self.physics.get_body_state()}
+        return {"current_time": self.current_time, "step_count": self.step_count, "paused": self.paused, "physics_state": self.physics.get_body_state(), "metrics": self.metrics.snapshot()}
 
     def render(self, output_path: str | Path | None = None):
         """Render the current state when rendering is enabled in YAML."""
@@ -99,6 +113,7 @@ class Simulator:
         return self.renderer.render(self.body, self.physics.get_body_state(), output_path)
 
     def shutdown(self) -> None:
+        log_event(self.logger, 20, "simulator_shutdown", self.metrics.snapshot())
         if self.brain:
             self.brain.shutdown()
         if self.renderer:
