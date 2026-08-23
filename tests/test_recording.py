@@ -6,6 +6,12 @@ from core import Action, Observation
 from recording import EpisodeRecorder, ReplayBrain
 
 
+def test_recording_rejects_non_mapping_info():
+    recorder = EpisodeRecorder()
+    with pytest.raises(ValueError, match="info must be a mapping"):
+        recorder.record(None, None, info=["not", "a", "mapping"])
+
+
 def test_recording_round_trip(tmp_path: Path):
     recorder = EpisodeRecorder({"seed": 3})
     observation = Observation(0.0, proprioception={"joint_positions": {"neck": 0.1}})
