@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from core import Action, Observation
 from recording import EpisodeRecorder, ReplayBrain
 
@@ -15,6 +17,32 @@ def test_recording_round_trip(tmp_path: Path):
     assert loaded.metadata == {"seed": 3}
     assert len(loaded) == 1
     assert loaded.transitions[0].reward == 1.5
+
+
+def test_recording_invalid_json_is_contextual(tmp_path: Path):
+    path = tmp_path / "invalid.jsonl"
+    path.write_text("{invalid}\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="Invalid episode recording JSON at line 1"):
+        EpisodeRecorder.load_jsonl(path)
+
+
+def test_recording_metadata_and_transition_shapes_are_validated(tmp_path: Path):
+    metadata_path = tmp_path / "bad-metadata.jsonl"
+    metadata_path.write_text('{"type":"metadata","metadata":[]}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="Episode recording metadata must be a JSON object"):
+        EpisodeRecorder.load_jsonl(metadata_path)
+
+    transition_path = tmp_path / "bad-transition.jsonl"
+    transition_path.write_text('{"type":"metadata"}\n{"type":"transition"}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="transition missing required fields"):
+        EpisodeRecorder.load_jsonl(transition_path)
+
+
+def test_recording_non_object_line_is_rejected(tmp_path: Path):
+    path = tmp_path / "list.jsonl"
+    path.write_text("[]\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="line 1 must be a JSON object"):
+        EpisodeRecorder.load_jsonl(path)
 
 
 def test_replay_brain_reproduces_actions():

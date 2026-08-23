@@ -38,12 +38,27 @@ class EpisodeRecorder:
     def load_jsonl(cls, path: str | Path) -> "EpisodeRecorder":
         recorder = cls()
         with Path(path).open(encoding="utf-8") as handle:
-            for line in handle:
-                record = json.loads(line)
+            for line_number, line in enumerate(handle, start=1):
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError as error:
+                    raise ValueError(f"Invalid episode recording JSON at line {line_number}: {error.msg}") from error
+                if not isinstance(record, dict):
+                    raise ValueError(f"Episode recording line {line_number} must be a JSON object")
                 if record.get("type") == "metadata":
-                    recorder.metadata = record.get("metadata", {})
+                    metadata = record.get("metadata", {})
+                    if not isinstance(metadata, dict):
+                        raise ValueError("Episode recording metadata must be a JSON object")
+                    recorder.metadata = metadata
                 elif record.get("type") == "transition":
-                    recorder.transitions.append(RecordedTransition(record["observation"], record["action"], float(record["reward"]), bool(record["done"]), record.get("info", {})))
+                    required_fields = ("observation", "action", "reward", "done")
+                    missing_fields = [field for field in required_fields if field not in record]
+                    if missing_fields:
+                        raise ValueError(f"Episode recording transition missing required fields: {', '.join(missing_fields)}")
+                    info = record.get("info", {})
+                    if not isinstance(info, dict):
+                        raise ValueError("Episode recording transition info must be a JSON object")
+                    recorder.transitions.append(RecordedTransition(record["observation"], record["action"], float(record["reward"]), bool(record["done"]), info))
         return recorder
 
     def __len__(self) -> int:
