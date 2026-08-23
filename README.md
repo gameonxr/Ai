@@ -135,9 +135,21 @@ python examples/benchmark.py
 
 Configure the run in `config/benchmark_config.yaml`. The benchmark is intentionally separate from training so performance measurements do not depend on policy behavior.
 
+## Unified CLI
+
+After installing the package, the `ai-sim` command provides one operator entry point for common workflows:
+
+```bash
+ai-sim validate config/simulator_config.yaml
+ai-sim benchmark --steps 1000 --seed 42
+ai-sim run --run-id baseline --episodes 3 --max-steps 100
+```
+
+Each command returns structured JSON suitable for shell automation and CI logs. The equivalent source entry point is `python cli.py` when working directly from the repository.
+
 ## Repository layout
 
-`simulator/` orchestrates the loop and configuration. `brain/` contains the abstract brain contract and dummy implementation. `body/` loads links and joints from YAML. `physics/` defines the backend abstraction and portable MuJoCo/Bullet boundaries. `sensors/` and `actuators/` provide modular components. `environment/` contains the basic floor/world model. `rendering/` provides the headless renderer interface and Matplotlib implementation. `training/` provides policy, trainer, and rollout interfaces. `agents/` provides the multi-agent coordinator. `recording/` provides episode recording and replay primitives. `robot/` provides the safe adapter contract. `vector_env/` provides batched independent environments. `checkpointing/` provides versioned resumable state. `observability/` provides structured events and metrics. `experiments/` provides run orchestration and manifests. `benchmarks/` provides reproducible performance reports. `config/`, `examples/`, and `tests/` contain configuration, usage examples, and automated verification. Sensor transforms and actuator dynamics are covered by the reliability test suite.
+`simulator/` orchestrates the loop and configuration. `brain/` contains the abstract brain contract and dummy implementation. `body/` loads links and joints from YAML. `physics/` defines the backend abstraction and portable MuJoCo/Bullet boundaries. `sensors/` and `actuators/` provide modular components. `environment/` contains the basic floor/world model. `rendering/` provides the headless renderer interface and Matplotlib implementation. `training/` provides policy, trainer, and rollout interfaces. `agents/` provides the multi-agent coordinator. `recording/` provides episode recording and replay primitives. `robot/` provides the safe adapter contract. `vector_env/` provides batched independent environments. `checkpointing/` provides versioned resumable state. `observability/` provides structured events and metrics. `experiments/` provides run orchestration and manifests. `benchmarks/` provides reproducible performance reports. `config_validation/` provides canonical configuration diagnostics. `cli.py` exposes the unified operator CLI. `config/`, `examples/`, and `tests/` contain configuration, usage examples, and automated verification. Sensor transforms and actuator dynamics are covered by the reliability test suite.
 
 ## Design constraints
 
