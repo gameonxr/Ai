@@ -55,6 +55,7 @@ def build_parser() -> argparse.ArgumentParser:
     sweep.add_argument("--sweep-id", default="sweep")
     sweep.add_argument("--manifest-dir", default="artifacts/runs")
     sweep.add_argument("--json-out", help="write the sweep summary artifact")
+    sweep.add_argument("--resume", action="store_true", help="reuse matching completed manifests")
 
     run = subparsers.add_parser("run", help="run seeded experiment episodes")
     run.add_argument("--config", default=default_simulator_config())
@@ -102,7 +103,7 @@ def main(argv: list[str] | None = None) -> int:
         finally:
             simulator.shutdown()
     if args.command == "sweep":
-        result = SweepRunner(args.sweep_id, args.manifest_dir).run_file(args.cases)
+        result = SweepRunner(args.sweep_id, args.manifest_dir, resume=args.resume).run_file(args.cases)
         if args.json_out:
             result.write_json(args.json_out)
         print(json.dumps(result.to_dict(), indent=2, sort_keys=True))

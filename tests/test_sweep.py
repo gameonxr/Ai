@@ -53,3 +53,19 @@ def test_sweep_runner_rejects_empty_and_duplicate_cases(tmp_path: Path):
     empty_path.write_text("[]", encoding="utf-8")
     with pytest.raises(ValueError):
         runner.run_file(empty_path)
+
+
+def test_sweep_resume_reuses_matching_completed_manifests(tmp_path: Path):
+    cases = [{"run_id": "resume-a", "seed": 12, "episodes": 1, "max_steps": 1, "temperature": 0.5}]
+    first = SweepRunner("resume-sweep", tmp_path).run(cases)
+    second = SweepRunner("resume-sweep", tmp_path, resume=True).run(cases)
+    assert first.cases_completed == 1
+    assert second.cases_completed == 1
+    assert second.resumed_cases == 1
+    assert second.manifests[0].started_at == first.manifests[0].started_at
+
+
+def test_sweep_resume_rejects_mismatched_completed_manifest(tmp_path: Path):
+    SweepRunner("resume-sweep", tmp_path).run([{"run_id": "resume-a", "seed": 12, "episodes": 1, "max_steps": 1}])
+    with pytest.raises(ValueError, match="does not match"):
+        SweepRunner("resume-sweep", tmp_path, resume=True).run([{"run_id": "resume-a", "seed": 12, "episodes": 2, "max_steps": 1}])
