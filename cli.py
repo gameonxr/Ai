@@ -8,7 +8,10 @@ from pathlib import Path
 from benchmarks import run_benchmark
 from config_validation import ConfigurationValidator
 from experiments import ExperimentRunner
+from evaluation import Evaluator
 from health import collect_health
+from simulator import Simulator
+from training import RandomTorquePolicy
 
 
 def default_simulator_config() -> str:
@@ -32,6 +35,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     health = subparsers.add_parser("health", help="report runtime and dependency health")
     health.add_argument("--config", default=default_simulator_config())
+
+    evaluate = subparsers.add_parser("evaluate", help="evaluate the seeded baseline policy")
+    evaluate.add_argument("--config", default=default_simulator_config())
+    evaluate.add_argument("--episodes", type=int, default=5)
+    evaluate.add_argument("--max-steps", type=int, default=100)
+    evaluate.add_argument("--seed", type=int, default=42)
+    evaluate.add_argument("--reward-per-step", type=float, default=1.0)
 
     run = subparsers.add_parser("run", help="run seeded experiment episodes")
     run.add_argument("--config", default=default_simulator_config())
@@ -57,6 +67,15 @@ def main(argv: list[str] | None = None) -> int:
         report = collect_health(args.config)
         print(json.dumps(report, indent=2, sort_keys=True))
         return 0 if report["healthy"] else 1
+    if args.command == "evaluate":
+        simulator = Simulator(args.config)
+        try:
+            policy = RandomTorquePolicy(list(simulator.actuators), seed=args.seed)
+            summary = Evaluator(simulator, policy, reward_fn=lambda observation, action: args.reward_per_step).run(args.episodes, args.max_steps, args.seed)
+            print(json.dumps(summary.to_dict(), indent=2, sort_keys=True))
+            return 0
+        finally:
+            simulator.shutdown()
     manifest = ExperimentRunner(args.config, args.run_id, args.manifest_dir).run(args.episodes, args.max_steps, args.seed, args.checkpoint_every)
     print(json.dumps({"run_id": manifest.run_id, "status": manifest.status, "episodes_completed": manifest.episodes_completed, "total_steps": manifest.total_steps}, indent=2, sort_keys=True))
     return 0
