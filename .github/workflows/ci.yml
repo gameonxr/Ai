@@ -48,7 +48,7 @@ jobs:
           PYTHONPATH=/tmp/ai-wheel-test python -m cli report --manifest-dir /tmp/ai-wheel-artifacts --json-out /tmp/ai-wheel-artifacts/report.json --strict
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-${{ matrix.python-version }}
           path: coverage.xml
