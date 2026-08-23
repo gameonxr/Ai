@@ -26,9 +26,18 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - name: Install dependencies
-        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.txt build
       - name: Run tests with coverage
         run: python -m pytest -q --cov=simulator --cov=brain --cov=core --cov=body --cov=physics --cov=sensors --cov=actuators --cov=environment --cov=rendering --cov=training --cov=agents --cov=recording --cov=robot --cov=vector_env --cov-report=term-missing --cov-report=xml
+      - name: Build wheel
+        run: python -m build --wheel --no-isolation
+      - name: Smoke test installed wheel
+        run: |
+          rm -rf /tmp/ai-wheel-test
+          python -m pip install --target /tmp/ai-wheel-test --no-deps dist/*.whl
+          cd /tmp
+          PYTHONPATH=/tmp/ai-wheel-test python -m cli validate
+          PYTHONPATH=/tmp/ai-wheel-test python -m cli benchmark --steps 2
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
