@@ -45,7 +45,7 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           PYTHONPATH=/tmp/ai-wheel-test python -m cli sweep --cases config/sweep_cases.json --sweep-id ci-sweep --manifest-dir /tmp/ai-wheel-artifacts/runs --json-out /tmp/ai-wheel-artifacts/sweep.json
           PYTHONPATH=/tmp/ai-wheel-test python -m cli sweep --cases config/sweep_cases.json --sweep-id ci-sweep --manifest-dir /tmp/ai-wheel-artifacts/runs --resume
-          PYTHONPATH=/tmp/ai-wheel-test python -m cli report --manifest-dir /tmp/ai-wheel-artifacts --json-out /tmp/ai-wheel-artifacts/report.json
+          PYTHONPATH=/tmp/ai-wheel-test python -m cli report --manifest-dir /tmp/ai-wheel-artifacts --json-out /tmp/ai-wheel-artifacts/report.json --strict
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
