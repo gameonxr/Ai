@@ -24,6 +24,8 @@ class RunManifest:
     metrics: list[dict[str, Any]] = field(default_factory=list)
     checkpoint_path: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    max_steps_requested: int = 100
+    seed: int | None = None
 
 
 class ExperimentRunner:
@@ -40,7 +42,7 @@ class ExperimentRunner:
         if episodes < 1 or max_steps < 1:
             raise ValueError("episodes and max_steps must be >= 1")
         started = datetime.now(timezone.utc).isoformat()
-        manifest = RunManifest(self.run_id, "running", started, None, self.simulator_config, episodes, 0, 0, metadata=self.metadata.copy())
+        manifest = RunManifest(self.run_id, "running", started, None, self.simulator_config, episodes, 0, 0, metadata=self.metadata.copy(), max_steps_requested=max_steps, seed=seed)
         simulator = Simulator(self.simulator_config)
         policy = self.policy_factory(simulator) if self.policy_factory else RandomTorquePolicy(list(simulator.actuators), seed=seed)
         trainer = Trainer(simulator, policy, reward_fn=lambda observation, action: 0.0)

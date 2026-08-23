@@ -81,7 +81,7 @@ class SweepRunner:
                 existing = self._load_manifest(existing_path)
                 expected_metadata = metadata
                 if existing.status == "completed":
-                    if existing.config_path != simulator_config or existing.episodes_requested != episodes or existing.metadata != expected_metadata:
+                    if existing.config_path != simulator_config or existing.episodes_requested != episodes or existing.max_steps_requested != max_steps or existing.seed != seed or existing.metadata != expected_metadata:
                         raise ValueError(f"existing completed manifest does not match sweep case: {run_id}")
                     manifests.append(existing)
                     resumed_cases += 1
