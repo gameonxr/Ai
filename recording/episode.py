@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
+from artifact_io import write_text_atomic
 from core.action import Action
 from core.observation import Observation
 
@@ -29,12 +30,9 @@ class EpisodeRecorder:
         self.transitions.append(RecordedTransition(observation.to_dict(), action.to_dict(), float(reward), bool(done), info or {}))
 
     def save_jsonl(self, path: str | Path) -> None:
-        output = Path(path)
-        output.parent.mkdir(parents=True, exist_ok=True)
-        with output.open("w", encoding="utf-8") as handle:
-            handle.write(json.dumps({"type": "metadata", "metadata": self.metadata}, sort_keys=True) + "\n")
-            for transition in self.transitions:
-                handle.write(json.dumps({"type": "transition", **asdict(transition)}, sort_keys=True) + "\n")
+        lines = [json.dumps({"type": "metadata", "metadata": self.metadata}, sort_keys=True)]
+        lines.extend(json.dumps({"type": "transition", **asdict(transition)}, sort_keys=True) for transition in self.transitions)
+        write_text_atomic("\n".join(lines) + "\n", path)
 
     @classmethod
     def load_jsonl(cls, path: str | Path) -> "EpisodeRecorder":
