@@ -48,6 +48,7 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--max-steps", type=int, default=100)
     evaluate.add_argument("--seed", type=int, default=42)
     evaluate.add_argument("--reward-per-step", type=float, default=1.0)
+    evaluate.add_argument("--json-out", help="write a metadata-rich evaluation artifact")
 
     run = subparsers.add_parser("run", help="run seeded experiment episodes")
     run.add_argument("--config", default=default_simulator_config())
@@ -86,6 +87,10 @@ def main(argv: list[str] | None = None) -> int:
         try:
             policy = RandomTorquePolicy(list(simulator.actuators), seed=args.seed)
             summary = Evaluator(simulator, policy, reward_fn=lambda observation, action: args.reward_per_step).run(args.episodes, args.max_steps, args.seed)
+            if args.json_out:
+                output = Path(args.json_out)
+                output.parent.mkdir(parents=True, exist_ok=True)
+                output.write_text(json.dumps(summary.to_artifact_dict(args.config, args.seed, args.reward_per_step), indent=2, sort_keys=True), encoding="utf-8")
             print(json.dumps(summary.to_dict(), indent=2, sort_keys=True))
             return 0
         finally:

@@ -28,3 +28,48 @@ def test_cli_report(capsys, tmp_path: Path):
     assert payload["manifest_count"] == 1
     assert json_out.exists()
     assert markdown_out.exists()
+
+
+def test_evaluation_artifact_is_persisted_and_reported(capsys, tmp_path: Path):
+    evaluation_path = tmp_path / "evaluations" / "evaluation.json"
+    assert main([
+        "evaluate",
+        "--episodes",
+        "2",
+        "--max-steps",
+        "3",
+        "--seed",
+        "9",
+        "--reward-per-step",
+        "2.5",
+        "--json-out",
+        str(evaluation_path),
+    ]) == 0
+    json.loads(capsys.readouterr().out)
+    artifact = json.loads(evaluation_path.read_text(encoding="utf-8"))
+    assert artifact["artifact_type"] == "evaluation"
+    assert artifact["episodes"] == 2
+    assert artifact["total_steps"] == 6
+    assert artifact["reward_per_step"] == 2.5
+
+    ExperimentRunner("config/simulator_config.yaml", "mixed-run", tmp_path).run(episodes=1, max_steps=2, seed=4)
+    summary = ReportBuilder().build(tmp_path)
+    assert summary.manifest_count == 1
+    assert summary.evaluation_count == 1
+    assert summary.mean_evaluation_reward == 7.5
+    markdown = tmp_path / "mixed-report.md"
+    ReportBuilder().write_markdown(summary, markdown)
+    markdown_text = markdown.read_text(encoding="utf-8")
+    assert "Evaluation artifacts: 1" in markdown_text
+    assert "Mean reward" in markdown_text
+
+
+def test_evaluation_summary_artifact_contains_reproducibility_metadata():
+    from evaluation import EvaluationSummary
+
+    summary = EvaluationSummary(1, 2, 2.0, 0.0, 2.0, 2.0, 2.0, [])
+    artifact = summary.to_artifact_dict("config/simulator_config.yaml", 11, 1.0)
+    assert artifact["artifact_type"] == "evaluation"
+    assert artifact["config_path"] == "config/simulator_config.yaml"
+    assert artifact["seed"] == 11
+    assert artifact["reward_per_step"] == 1.0

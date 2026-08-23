@@ -22,6 +22,16 @@ class EvaluationSummary:
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
+    def to_artifact_dict(self, config_path: str, seed: int | None, reward_per_step: float) -> dict[str, Any]:
+        """Return a persisted evaluation payload with reproducibility metadata."""
+        return {
+            "artifact_type": "evaluation",
+            "config_path": config_path,
+            "seed": seed,
+            "reward_per_step": reward_per_step,
+            **self.to_dict(),
+        }
+
 
 class Evaluator:
     """Evaluate one policy over seeded episodes without changing policy state."""
