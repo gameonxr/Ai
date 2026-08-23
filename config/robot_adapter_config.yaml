@@ -1,0 +1,4 @@
+robot_adapter:
+  type: simulator
+  live_hardware_enabled: false
+  emergency_stop_on_disconnect: true

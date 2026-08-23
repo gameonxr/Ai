@@ -74,9 +74,19 @@ python examples/record_replay.py
 
 The recorder is intentionally separate from the simulator loop, so later storage formats or playback controls can be introduced without changing the brain or physics contracts.
 
+## Robot adapter boundary
+
+`robot/` defines a transport-neutral adapter contract and a safe `SimulatedRobotAdapter`. It exercises connect, observation, action, disconnect, and emergency-stop behavior against the simulator without opening live hardware connections. Run the example with:
+
+```bash
+python examples/robot_adapter_example.py
+```
+
+Live robot I/O is deliberately disabled by default and requires a future, explicitly implemented transport adapter. `config/robot_adapter_config.yaml` records this safety boundary.
+
 ## Repository layout
 
-`simulator/` orchestrates the loop and configuration. `brain/` contains the abstract brain contract and dummy implementation. `body/` loads links and joints from YAML. `physics/` defines the backend abstraction and portable MuJoCo/Bullet boundaries. `sensors/` and `actuators/` provide modular components. `environment/` contains the basic floor/world model. `rendering/` provides the headless renderer interface and Matplotlib implementation. `training/` provides policy, trainer, and rollout interfaces. `agents/` provides the multi-agent coordinator. `recording/` provides episode recording and replay primitives. `config/`, `examples/`, and `tests/` contain configuration, usage examples, and automated verification.
+`simulator/` orchestrates the loop and configuration. `brain/` contains the abstract brain contract and dummy implementation. `body/` loads links and joints from YAML. `physics/` defines the backend abstraction and portable MuJoCo/Bullet boundaries. `sensors/` and `actuators/` provide modular components. `environment/` contains the basic floor/world model. `rendering/` provides the headless renderer interface and Matplotlib implementation. `training/` provides policy, trainer, and rollout interfaces. `agents/` provides the multi-agent coordinator. `recording/` provides episode recording and replay primitives. `robot/` provides the safe adapter contract. `config/`, `examples/`, and `tests/` contain configuration, usage examples, and automated verification.
 
 ## Design constraints
 
