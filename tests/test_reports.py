@@ -25,6 +25,8 @@ def test_cli_report(capsys, tmp_path: Path):
     markdown_out = tmp_path / "summary.md"
     assert main(["report", "--manifest-dir", str(tmp_path), "--json-out", str(json_out), "--markdown-out", str(markdown_out)]) == 0
     payload = json.loads(capsys.readouterr().out)
+    assert payload["artifact_type"] == "report"
+    assert payload["schema_version"] == 1
     assert payload["manifest_count"] == 1
     assert json_out.exists()
     assert markdown_out.exists()

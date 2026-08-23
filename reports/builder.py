@@ -9,7 +9,7 @@ from typing import Any
 from artifact_io import write_json_atomic, write_text_atomic
 
 
-KNOWN_ARTIFACT_TYPES = {"experiment_manifest", "evaluation", "benchmark", "health", "sweep", "checkpoint"}
+KNOWN_ARTIFACT_TYPES = {"experiment_manifest", "evaluation", "benchmark", "health", "sweep", "checkpoint", "report"}
 SUPPORTED_SCHEMA_VERSION = 1
 
 
@@ -39,7 +39,7 @@ class ReportSummary:
     checkpoints: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        return {"artifact_type": "report", "schema_version": 1, **asdict(self)}
 
 
 class ReportBuilder:
