@@ -23,3 +23,13 @@ def test_timestamp_must_be_numeric():
             Observation(value)  # type: ignore[arg-type]
         with pytest.raises(ValueError, match="finite"):
             Action.noop(timestamp=value)  # type: ignore[arg-type]
+
+
+def test_action_metadata_must_be_an_object():
+    with pytest.raises(ValueError, match="Action metadata must be a JSON object"):
+        Action(joint_targets={"neck": 0.1}, metadata=[])  # type: ignore[arg-type]
+
+
+def test_observation_info_must_be_an_object():
+    with pytest.raises(ValueError, match="Observation info must be a JSON object"):
+        Observation(0.0, info=[])  # type: ignore[arg-type]

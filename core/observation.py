@@ -28,6 +28,8 @@ class Observation:
     info: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        if not isinstance(self.info, dict):
+            raise ValueError("Observation info must be a JSON object")
         if self.timestamp is None or isinstance(self.timestamp, bool) or not isinstance(self.timestamp, (int, float, np.integer, np.floating)) or not np.isfinite(self.timestamp):
             raise ValueError("Observation requires a finite numeric timestamp")
 

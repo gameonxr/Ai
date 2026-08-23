@@ -17,6 +17,8 @@ class Action:
     metadata: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        if not isinstance(self.metadata, dict):
+            raise ValueError("Action metadata must be a JSON object")
         if not self.has_commands and not self.metadata.get("noop", False):
             raise ValueError("Action must specify at least one command")
         if self.timestamp is not None:
