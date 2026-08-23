@@ -55,3 +55,10 @@ def test_replay_brain_reproduces_actions():
     assert brain.get_action().joint_targets == {"neck": 0.2}
     brain.decide()
     assert brain.get_action().metadata["noop"]
+
+
+def test_replay_brain_rejects_non_object_action_payload():
+    brain = ReplayBrain([type("Transition", (), {"action": []})()])
+    brain.reset()
+    with pytest.raises(ValueError, match="Replay action payload must be a JSON object"):
+        brain.decide()

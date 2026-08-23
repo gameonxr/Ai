@@ -85,6 +85,8 @@ class ReplayBrain:
             self.current_action = Action.noop()
             return
         payload = self.actions[self.index]
+        if not isinstance(payload, dict):
+            raise ValueError("Replay action payload must be a JSON object")
         self.current_action = Action(joint_targets=payload.get("joint_targets"), motor_commands=payload.get("motor_commands"), gripper_commands=payload.get("gripper_commands"), forces=payload.get("forces"), torques=payload.get("torques"), timestamp=payload.get("timestamp"), metadata=payload.get("metadata", {}))
         self.index += 1
 
