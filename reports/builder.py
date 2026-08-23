@@ -26,6 +26,7 @@ class ReportSummary:
     health_count: int = 0
     healthy_count: int = 0
     health_reports: list[dict[str, Any]] = field(default_factory=list)
+    artifact_errors: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -36,7 +37,18 @@ class ReportBuilder:
 
     def build(self, manifest_dir: str | Path) -> ReportSummary:
         paths = sorted(Path(manifest_dir).rglob("*.json"))
-        artifacts = [json.loads(path.read_text(encoding="utf-8")) for path in paths]
+        artifacts: list[dict[str, Any]] = []
+        artifact_errors: list[str] = []
+        for path in paths:
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                artifact_errors.append(str(path))
+                continue
+            if not isinstance(payload, dict):
+                artifact_errors.append(str(path))
+                continue
+            artifacts.append(payload)
         evaluations = [item for item in artifacts if item.get("artifact_type") == "evaluation"]
         benchmarks = [item for item in artifacts if item.get("artifact_type") == "benchmark"]
         health_reports = [item for item in artifacts if item.get("artifact_type") == "health"]
@@ -52,7 +64,7 @@ class ReportBuilder:
         evaluation_rows = [{"config_path": item.get("config_path"), "seed": item.get("seed"), "episodes": item.get("episodes", 0), "total_steps": item.get("total_steps", 0), "mean_reward": item.get("mean_reward", 0.0), "mean_steps": item.get("mean_steps", 0.0)} for item in evaluations]
         benchmark_rows = [{"config_path": item.get("config_path"), "seed": item.get("seed"), "steps": item.get("steps", 0), "simulation_seconds": item.get("simulation_seconds", 0.0), "wall_seconds": item.get("wall_seconds", 0.0), "realtime_factor": item.get("realtime_factor", 0.0)} for item in benchmarks]
         health_rows = [{"config_path": item.get("config_path"), "healthy": item.get("healthy", False), "python": item.get("python"), "platform": item.get("platform")} for item in health_reports]
-        return ReportSummary(len(manifests), len(completed), len(failed), len(episodes), sum(steps), mean(rewards) if rewards else 0.0, mean(steps) if steps else 0.0, run_rows, len(evaluations), mean(evaluation_rewards) if evaluation_rewards else 0.0, evaluation_rows, len(benchmarks), mean(realtime_factors) if realtime_factors else 0.0, benchmark_rows, len(health_reports), sum(item.get("healthy", False) for item in health_reports), health_rows)
+        return ReportSummary(len(manifests), len(completed), len(failed), len(episodes), sum(steps), mean(rewards) if rewards else 0.0, mean(steps) if steps else 0.0, run_rows, len(evaluations), mean(evaluation_rewards) if evaluation_rewards else 0.0, evaluation_rows, len(benchmarks), mean(realtime_factors) if realtime_factors else 0.0, benchmark_rows, len(health_reports), sum(item.get("healthy", False) for item in health_reports), health_rows, artifact_errors)
 
     def write_json(self, summary: ReportSummary, path: str | Path) -> None:
         output = Path(path)
@@ -62,7 +74,7 @@ class ReportBuilder:
     def write_markdown(self, summary: ReportSummary, path: str | Path) -> None:
         output = Path(path)
         output.parent.mkdir(parents=True, exist_ok=True)
-        lines = ["# Experiment Report", "", f"- Manifest count: {summary.manifest_count}", f"- Completed runs: {summary.completed_runs}", f"- Failed runs: {summary.failed_runs}", f"- Total episodes: {summary.total_episodes}", f"- Total steps: {summary.total_steps}", f"- Mean reward: {summary.mean_reward:.4f}", f"- Mean steps per episode: {summary.mean_steps_per_episode:.4f}", f"- Evaluation artifacts: {summary.evaluation_count}", f"- Mean evaluation reward: {summary.mean_evaluation_reward:.4f}", "", "| Run | Status | Episodes | Steps |", "|---|---|---:|---:|"]
+        lines = ["# Experiment Report", "", f"- Manifest count: {summary.manifest_count}", f"- Completed runs: {summary.completed_runs}", f"- Failed runs: {summary.failed_runs}", f"- Total episodes: {summary.total_episodes}", f"- Total steps: {summary.total_steps}", f"- Mean reward: {summary.mean_reward:.4f}", f"- Mean steps per episode: {summary.mean_steps_per_episode:.4f}", f"- Evaluation artifacts: {summary.evaluation_count}", f"- Mean evaluation reward: {summary.mean_evaluation_reward:.4f}", f"- Artifact errors: {len(summary.artifact_errors)}", "", "| Run | Status | Episodes | Steps |", "|---|---|---:|---:|"]
         lines.extend(f"| {run['run_id']} | {run['status']} | {run['episodes_completed']} | {run['total_steps']} |" for run in summary.runs)
         if summary.evaluations:
             lines.extend(["", "| Evaluation config | Seed | Episodes | Steps | Mean reward |", "|---|---:|---:|---:|---:|"])

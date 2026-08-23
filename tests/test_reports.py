@@ -99,3 +99,16 @@ def test_report_builder_aggregates_health_artifacts(tmp_path: Path):
     markdown_text = markdown_path.read_text(encoding="utf-8")
     assert "Health artifacts: 1" in markdown_text
     assert "Healthy snapshots: 1" in markdown_text
+
+
+def test_report_builder_records_malformed_artifacts_without_failing(tmp_path: Path):
+    broken = tmp_path / "broken.json"
+    broken.write_text("{not valid json", encoding="utf-8")
+    non_mapping = tmp_path / "list.json"
+    non_mapping.write_text("[]", encoding="utf-8")
+    summary = ReportBuilder().build(tmp_path)
+    assert summary.manifest_count == 0
+    assert len(summary.artifact_errors) == 2
+    markdown_path = tmp_path / "resilient-report.md"
+    ReportBuilder().write_markdown(summary, markdown_path)
+    assert "Artifact errors: 2" in markdown_path.read_text(encoding="utf-8")
