@@ -48,9 +48,14 @@ class CheckpointManager:
             raise ValueError(f"Unsupported checkpoint schema version: {schema_version}") from error
         if schema_version != 1:
             raise ValueError(f"Unsupported checkpoint schema version: {schema_version}")
-        if int(payload.get("version", -1)) != cls.CURRENT_VERSION:
-            raise ValueError(f"Unsupported checkpoint version: {payload.get('version')}")
-        return Checkpoint(payload["version"], payload["run_id"], int(payload["episode"]), int(payload["step"]), float(payload["current_time"]), payload["simulator_state"], payload["metrics"], payload.get("metadata", {}), artifact_type, schema_version)
+        checkpoint_version = payload.get("version", -1)
+        try:
+            checkpoint_version = int(checkpoint_version)
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"Unsupported checkpoint version: {checkpoint_version}") from error
+        if checkpoint_version != cls.CURRENT_VERSION:
+            raise ValueError(f"Unsupported checkpoint version: {checkpoint_version}")
+        return Checkpoint(checkpoint_version, payload["run_id"], int(payload["episode"]), int(payload["step"]), float(payload["current_time"]), payload["simulator_state"], payload["metrics"], payload.get("metadata", {}), artifact_type, schema_version)
 
     @classmethod
     def restore(cls, simulator, path: str | Path) -> Checkpoint:

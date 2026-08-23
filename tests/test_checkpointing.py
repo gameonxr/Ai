@@ -35,6 +35,17 @@ def test_checkpoint_version_is_validated(tmp_path: Path):
         raise AssertionError("Invalid checkpoint version was accepted")
 
 
+def test_checkpoint_version_must_be_numeric(tmp_path: Path):
+    path = tmp_path / "non-numeric-version.json"
+    path.write_text('{"version": "future"}', encoding="utf-8")
+    try:
+        CheckpointManager.load(path)
+    except ValueError as error:
+        assert "Unsupported checkpoint version: future" in str(error)
+    else:
+        raise AssertionError("Non-numeric checkpoint version was accepted")
+
+
 def test_checkpoint_persists_artifact_taxonomy(tmp_path: Path):
     simulator = Simulator("config/simulator_config.yaml")
     try:
