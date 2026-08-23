@@ -38,8 +38,12 @@ jobs:
           cd /tmp
           PYTHONPATH=/tmp/ai-wheel-test python -m cli validate
           PYTHONPATH=/tmp/ai-wheel-test python -m cli benchmark --steps 2
+          rm -rf /tmp/ai-wheel-artifacts
           mkdir -p /tmp/ai-wheel-artifacts/evaluations
           PYTHONPATH=/tmp/ai-wheel-test python -m cli evaluate --episodes 1 --max-steps 2 --json-out /tmp/ai-wheel-artifacts/evaluations/evaluation.json
+          cd "$GITHUB_WORKSPACE"
+          PYTHONPATH=/tmp/ai-wheel-test python -m cli sweep --cases config/sweep_cases.json --sweep-id ci-sweep --manifest-dir /tmp/ai-wheel-artifacts/runs --json-out /tmp/ai-wheel-artifacts/sweep.json
+          PYTHONPATH=/tmp/ai-wheel-test python -m cli sweep --cases config/sweep_cases.json --sweep-id ci-sweep --manifest-dir /tmp/ai-wheel-artifacts/runs --resume
           PYTHONPATH=/tmp/ai-wheel-test python -m cli report --manifest-dir /tmp/ai-wheel-artifacts --json-out /tmp/ai-wheel-artifacts/report.json
       - name: Upload coverage report
         if: always()
