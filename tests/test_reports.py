@@ -73,3 +73,16 @@ def test_evaluation_summary_artifact_contains_reproducibility_metadata():
     assert artifact["config_path"] == "config/simulator_config.yaml"
     assert artifact["seed"] == 11
     assert artifact["reward_per_step"] == 1.0
+
+
+def test_report_builder_aggregates_benchmark_artifacts(tmp_path: Path):
+    benchmark_path = tmp_path / "benchmarks" / "baseline.json"
+    assert main(["benchmark", "--steps", "2", "--seed", "5", "--json-out", str(benchmark_path)]) == 0
+    summary = ReportBuilder().build(tmp_path)
+    assert summary.benchmark_count == 1
+    assert summary.mean_realtime_factor >= 0.0
+    markdown_path = tmp_path / "benchmark-report.md"
+    ReportBuilder().write_markdown(summary, markdown_path)
+    markdown_text = markdown_path.read_text(encoding="utf-8")
+    assert "Benchmark artifacts: 1" in markdown_text
+    assert "Realtime factor" in markdown_text

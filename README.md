@@ -169,7 +169,14 @@ Each generated manifest records `sweep_id`, declaration index, and non-runtime p
 python examples/benchmark.py
 ```
 
-Configure the run in `config/benchmark_config.yaml`. The benchmark is intentionally separate from training so performance measurements do not depend on policy behavior.
+Configure the run in `config/benchmark_config.yaml`. The benchmark is intentionally separate from training so performance measurements do not depend on policy behavior. For reproducible performance tracking, persist a benchmark artifact and include it in a report:
+
+```bash
+ai-sim benchmark --steps 1000 --seed 42 --json-out artifacts/benchmarks/baseline.json
+ai-sim report --manifest-dir artifacts --json-out artifacts/report.json --markdown-out artifacts/report.md
+```
+
+Benchmark artifacts record the configuration path, seed, step count, simulated and wall-clock duration, real-time factor, and final simulator state.
 
 ## Unified CLI
 
@@ -177,7 +184,7 @@ After installing the package, the `ai-sim` command provides one operator entry p
 
 ```bash
 ai-sim validate config/simulator_config.yaml
-ai-sim benchmark --steps 1000 --seed 42
+ai-sim benchmark --steps 1000 --seed 42 --json-out artifacts/benchmarks/baseline.json
 ai-sim run --run-id baseline --episodes 3 --max-steps 100
 ai-sim sweep --cases config/sweep_cases.json --sweep-id baseline-seeds --manifest-dir artifacts/runs --json-out artifacts/sweeps/baseline-seeds.json
 ai-sim sweep --cases config/sweep_cases.json --sweep-id baseline-seeds --manifest-dir artifacts/runs --resume

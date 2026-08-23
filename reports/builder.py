@@ -20,6 +20,9 @@ class ReportSummary:
     evaluation_count: int = 0
     mean_evaluation_reward: float = 0.0
     evaluations: list[dict[str, Any]] = field(default_factory=list)
+    benchmark_count: int = 0
+    mean_realtime_factor: float = 0.0
+    benchmarks: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -32,16 +35,19 @@ class ReportBuilder:
         paths = sorted(Path(manifest_dir).rglob("*.json"))
         artifacts = [json.loads(path.read_text(encoding="utf-8")) for path in paths]
         evaluations = [item for item in artifacts if item.get("artifact_type") == "evaluation"]
-        manifests = [item for item in artifacts if item.get("artifact_type") != "evaluation" and "status" in item]
+        benchmarks = [item for item in artifacts if item.get("artifact_type") == "benchmark"]
+        manifests = [item for item in artifacts if item.get("artifact_type") not in {"evaluation", "benchmark", "sweep"} and "status" in item]
         completed = [item for item in manifests if item.get("status") == "completed"]
         failed = [item for item in manifests if item.get("status") == "failed"]
         episodes = [episode for item in manifests for episode in item.get("metrics", [])]
         rewards = [float(episode.get("total_reward", 0.0)) for episode in episodes]
         steps = [int(episode.get("steps", 0)) for episode in episodes]
         evaluation_rewards = [float(item.get("mean_reward", 0.0)) for item in evaluations]
+        realtime_factors = [float(item.get("realtime_factor", 0.0)) for item in benchmarks]
         run_rows = [{"run_id": item.get("run_id"), "status": item.get("status"), "episodes_completed": item.get("episodes_completed", 0), "total_steps": item.get("total_steps", 0), "metadata": item.get("metadata", {})} for item in manifests]
         evaluation_rows = [{"config_path": item.get("config_path"), "seed": item.get("seed"), "episodes": item.get("episodes", 0), "total_steps": item.get("total_steps", 0), "mean_reward": item.get("mean_reward", 0.0), "mean_steps": item.get("mean_steps", 0.0)} for item in evaluations]
-        return ReportSummary(len(manifests), len(completed), len(failed), len(episodes), sum(steps), mean(rewards) if rewards else 0.0, mean(steps) if steps else 0.0, run_rows, len(evaluations), mean(evaluation_rewards) if evaluation_rewards else 0.0, evaluation_rows)
+        benchmark_rows = [{"config_path": item.get("config_path"), "seed": item.get("seed"), "steps": item.get("steps", 0), "simulation_seconds": item.get("simulation_seconds", 0.0), "wall_seconds": item.get("wall_seconds", 0.0), "realtime_factor": item.get("realtime_factor", 0.0)} for item in benchmarks]
+        return ReportSummary(len(manifests), len(completed), len(failed), len(episodes), sum(steps), mean(rewards) if rewards else 0.0, mean(steps) if steps else 0.0, run_rows, len(evaluations), mean(evaluation_rewards) if evaluation_rewards else 0.0, evaluation_rows, len(benchmarks), mean(realtime_factors) if realtime_factors else 0.0, benchmark_rows)
 
     def write_json(self, summary: ReportSummary, path: str | Path) -> None:
         output = Path(path)
@@ -56,4 +62,8 @@ class ReportBuilder:
         if summary.evaluations:
             lines.extend(["", "| Evaluation config | Seed | Episodes | Steps | Mean reward |", "|---|---:|---:|---:|---:|"])
             lines.extend(f"| {item['config_path']} | {item['seed']} | {item['episodes']} | {item['total_steps']} | {item['mean_reward']:.4f} |" for item in summary.evaluations)
+        lines.extend(["", f"- Benchmark artifacts: {summary.benchmark_count}", f"- Mean realtime factor: {summary.mean_realtime_factor:.4f}"])
+        if summary.benchmarks:
+            lines.extend(["", "| Benchmark config | Seed | Steps | Sim seconds | Wall seconds | Realtime factor |", "|---|---:|---:|---:|---:|---:|"])
+            lines.extend(f"| {item['config_path']} | {item['seed']} | {item['steps']} | {item['simulation_seconds']:.4f} | {item['wall_seconds']:.4f} | {item['realtime_factor']:.4f} |" for item in summary.benchmarks)
         output.write_text("\n".join(lines) + "\n", encoding="utf-8")

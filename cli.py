@@ -33,6 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
     benchmark.add_argument("--config", default=default_simulator_config())
     benchmark.add_argument("--steps", type=int, default=1000)
     benchmark.add_argument("--seed", type=int, default=42)
+    benchmark.add_argument("--json-out", help="write a metadata-rich benchmark artifact")
 
     health = subparsers.add_parser("health", help="report runtime and dependency health")
     health.add_argument("--config", default=default_simulator_config())
@@ -75,7 +76,12 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(report.to_dict(), indent=2, sort_keys=True))
         return 0 if report.valid else 1
     if args.command == "benchmark":
-        print(json.dumps(run_benchmark(args.config, args.steps, args.seed).to_dict(), indent=2, sort_keys=True))
+        benchmark_result = run_benchmark(args.config, args.steps, args.seed)
+        if args.json_out:
+            output = Path(args.json_out)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(json.dumps(benchmark_result.to_artifact_dict(args.config, args.seed), indent=2, sort_keys=True), encoding="utf-8")
+        print(json.dumps(benchmark_result.to_dict(), indent=2, sort_keys=True))
         return 0
     if args.command == "health":
         report = collect_health(args.config)

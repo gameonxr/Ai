@@ -28,3 +28,14 @@ def test_cli_run(capsys, tmp_path: Path):
     payload = json.loads(capsys.readouterr().out)
     assert payload["status"] == "completed"
     assert (tmp_path / "cli-test.json").exists()
+
+
+def test_cli_benchmark_writes_artifact(capsys, tmp_path: Path):
+    json_out = tmp_path / "benchmark.json"
+    assert main(["benchmark", "--steps", "2", "--seed", "7", "--json-out", str(json_out)]) == 0
+    json.loads(capsys.readouterr().out)
+    artifact = json.loads(json_out.read_text(encoding="utf-8"))
+    assert artifact["artifact_type"] == "benchmark"
+    assert artifact["steps"] == 2
+    assert artifact["seed"] == 7
+    assert artifact["config_path"]
