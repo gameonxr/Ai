@@ -191,7 +191,8 @@ Benchmark artifacts record the configuration path, seed, step count, simulated a
 ai-sim health --json-out artifacts/health/baseline.json
 ```
 
-All persisted benchmark, evaluation, health, sweep, and experiment-manifest artifacts carry `schema_version: 1` alongside their `artifact_type`. The resulting `artifact_type: health` JSON can be included automatically by `ai-sim report --manifest-dir artifacts`, which reports the number of snapshots and healthy snapshots alongside experiment, evaluation, benchmark, and sweep summaries.
+All persisted benchmark, evaluation, health, sweep, and experiment-manifest artifacts carry `schema_version: 1` alongside their `artifact_type`. JSON artifacts are written atomically through the packaged `artifact_io` helper, so interrupted writes do not leave partial payloads for report discovery.
+The resulting `artifact_type: health` JSON can be included automatically by `ai-sim report --manifest-dir artifacts`, which reports the number of snapshots and healthy snapshots alongside experiment, evaluation, benchmark, and sweep summaries.
 Sweep summary artifacts are shown with requested, completed, and resumed case counts. Report generation tolerates malformed or non-object JSON files, skips them, and records their paths under `artifact_errors` so one damaged artifact does not hide the remaining results. Use `ai-sim report --strict` in CI or release checks when any artifact parsing error or unsupported schema version should make the command exit non-zero; default mode skips those artifacts and records their paths under `artifact_errors`.
 
 ## Unified CLI

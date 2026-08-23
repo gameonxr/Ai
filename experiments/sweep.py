@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
+from artifact_io import write_json_atomic
 from .runner import ExperimentRunner, RunManifest
 
 
@@ -33,9 +34,7 @@ class SweepResult:
         }
 
     def write_json(self, path: str | Path) -> None:
-        output = Path(path)
-        output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(json.dumps(self.to_dict(), indent=2, sort_keys=True), encoding="utf-8")
+        write_json_atomic(self.to_dict(), path)
 
 
 class SweepRunner:

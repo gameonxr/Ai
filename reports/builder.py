@@ -6,6 +6,8 @@ from pathlib import Path
 from statistics import mean
 from typing import Any
 
+from artifact_io import write_json_atomic
+
 
 KNOWN_ARTIFACT_TYPES = {"experiment_manifest", "evaluation", "benchmark", "health", "sweep"}
 SUPPORTED_SCHEMA_VERSION = 1
@@ -79,9 +81,7 @@ class ReportBuilder:
         return ReportSummary(len(manifests), len(completed), len(failed), len(episodes), sum(steps), mean(rewards) if rewards else 0.0, mean(steps) if steps else 0.0, run_rows, len(evaluations), mean(evaluation_rewards) if evaluation_rewards else 0.0, evaluation_rows, len(benchmarks), mean(realtime_factors) if realtime_factors else 0.0, benchmark_rows, len(health_reports), sum(item.get("healthy", False) for item in health_reports), health_rows, artifact_errors, len(sweeps), sweep_rows)
 
     def write_json(self, summary: ReportSummary, path: str | Path) -> None:
-        output = Path(path)
-        output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(json.dumps(summary.to_dict(), indent=2, sort_keys=True), encoding="utf-8")
+        write_json_atomic(summary.to_dict(), path)
 
     def write_markdown(self, summary: ReportSummary, path: str | Path) -> None:
         output = Path(path)

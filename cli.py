@@ -5,6 +5,7 @@ import json
 from importlib.resources import files
 from pathlib import Path
 
+from artifact_io import write_json_atomic
 from benchmarks import run_benchmark
 from config_validation import ConfigurationValidator
 from experiments import ExperimentRunner, SweepRunner
@@ -80,17 +81,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "benchmark":
         benchmark_result = run_benchmark(args.config, args.steps, args.seed)
         if args.json_out:
-            output = Path(args.json_out)
-            output.parent.mkdir(parents=True, exist_ok=True)
-            output.write_text(json.dumps(benchmark_result.to_artifact_dict(args.config, args.seed), indent=2, sort_keys=True), encoding="utf-8")
+            write_json_atomic(benchmark_result.to_artifact_dict(args.config, args.seed), args.json_out)
         print(json.dumps(benchmark_result.to_dict(), indent=2, sort_keys=True))
         return 0
     if args.command == "health":
         report = collect_health(args.config)
         if args.json_out:
-            output = Path(args.json_out)
-            output.parent.mkdir(parents=True, exist_ok=True)
-            output.write_text(json.dumps({"artifact_type": "health", "schema_version": 1, "config_path": args.config, **report}, indent=2, sort_keys=True), encoding="utf-8")
+            write_json_atomic({"artifact_type": "health", "schema_version": 1, "config_path": args.config, **report}, args.json_out)
         print(json.dumps(report, indent=2, sort_keys=True))
         return 0 if report["healthy"] else 1
     if args.command == "report":
@@ -107,9 +104,7 @@ def main(argv: list[str] | None = None) -> int:
             policy = RandomTorquePolicy(list(simulator.actuators), seed=args.seed)
             summary = Evaluator(simulator, policy, reward_fn=lambda observation, action: args.reward_per_step).run(args.episodes, args.max_steps, args.seed)
             if args.json_out:
-                output = Path(args.json_out)
-                output.parent.mkdir(parents=True, exist_ok=True)
-                output.write_text(json.dumps(summary.to_artifact_dict(args.config, args.seed, args.reward_per_step), indent=2, sort_keys=True), encoding="utf-8")
+                write_json_atomic(summary.to_artifact_dict(args.config, args.seed, args.reward_per_step), args.json_out)
             print(json.dumps(summary.to_dict(), indent=2, sort_keys=True))
             return 0
         finally:

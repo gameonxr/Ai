@@ -5,7 +5,7 @@ setup(
     version="0.1.0",
     description="A brain-agnostic humanoid body and physics simulator foundation.",
     packages=find_packages(),
-    py_modules=["cli", "health"],
+    py_modules=["artifact_io", "cli", "health"],
     package_data={"ai_body_simulator_resources": ["config/*.yaml"]},
     include_package_data=True,
     install_requires=["numpy>=1.24", "PyYAML>=6.0", "matplotlib>=3.7"],
