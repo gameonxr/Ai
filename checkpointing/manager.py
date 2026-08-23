@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from artifact_io import write_json_atomic
+
 
 @dataclass
 class Checkpoint:
@@ -26,9 +28,7 @@ class CheckpointManager:
     def save(cls, simulator, path: str | Path, run_id: str = "default", metadata: dict | None = None) -> Checkpoint:
         state = {"physics": simulator.physics.get_checkpoint_state(), "paused": simulator.paused, "actuators": {name: actuator.current_command for name, actuator in simulator.actuators.items()}}
         checkpoint = Checkpoint(cls.CURRENT_VERSION, run_id, simulator.metrics.episodes, simulator.step_count, simulator.current_time, state, simulator.metrics.snapshot(), metadata or {})
-        output = Path(path)
-        output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(json.dumps(asdict(checkpoint), sort_keys=True, indent=2), encoding="utf-8")
+        write_json_atomic(asdict(checkpoint), path)
         return checkpoint
 
     @classmethod

@@ -131,7 +131,7 @@ The complete workflow is demonstrated by:
 python examples/checkpoint_example.py
 ```
 
-`config/checkpoint_config.yaml` records the recommended checkpoint path and cadence. Checkpoints are validated by version and joint set before restoration.
+`config/checkpoint_config.yaml` records the recommended checkpoint path and cadence. Checkpoints are validated by version and joint set before restoration, and are written atomically so an interrupted save does not leave a partial checkpoint for a later resume.
 
 ## Experiment orchestration
 
