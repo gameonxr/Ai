@@ -1,8 +1,11 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from simulator import Simulator
 from training import RandomTorquePolicy, Rollout, Trainer
+from training.rollout import Transition
 
 
 def test_rollout_jsonl_persistence(tmp_path: Path):
@@ -16,6 +19,16 @@ def test_rollout_jsonl_persistence(tmp_path: Path):
     assert len(output.read_text(encoding="utf-8").splitlines()) == 4
     assert json.loads(output.read_text(encoding="utf-8").splitlines()[0])["reward"] == 2.0
     trainer.close()
+
+
+def test_rollout_save_preserves_existing_file_on_serialization_failure(tmp_path: Path):
+    path = tmp_path / "rollout.jsonl"
+    path.write_text("existing\n", encoding="utf-8")
+    rollout = Rollout()
+    rollout.transitions.append(Transition({}, {}, 1.0, False, {"bad": object()}))
+    with pytest.raises(TypeError):
+        rollout.save_jsonl(path)
+    assert path.read_text(encoding="utf-8") == "existing\n"
 
 
 def test_trainer_seeded_policy_is_reproducible():

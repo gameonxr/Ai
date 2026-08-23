@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from artifact_io import write_text_atomic
 from core.action import Action
 from core.observation import Observation
 
@@ -38,8 +39,8 @@ class Rollout:
         return [asdict(item) for item in self.transitions]
 
     def save_jsonl(self, path: str | Path) -> None:
-        output = Path(path)
-        output.parent.mkdir(parents=True, exist_ok=True)
-        with output.open("w", encoding="utf-8") as handle:
-            for item in self.to_dicts():
-                handle.write(json.dumps(item, sort_keys=True) + "\n")
+        lines = [json.dumps(item, sort_keys=True) for item in self.to_dicts()]
+        content = "\n".join(lines)
+        if content:
+            content += "\n"
+        write_text_atomic(content, path)
