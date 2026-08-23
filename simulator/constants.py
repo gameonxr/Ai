@@ -1,0 +1,3 @@
+DEFAULT_TIMESTEP = 0.005
+DEFAULT_GRAVITY = (0.0, 0.0, -9.81)
+SUPPORTED_ENGINES = ("mujoco", "bullet", "toy")

@@ -1,0 +1,3 @@
+actuators:
+  control_mode: torque
+  defaults: {max_torque: 100.0, max_velocity: 20.0, max_force: 100.0, damping: 0.01}

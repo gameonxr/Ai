@@ -1,0 +1,36 @@
+body:
+  type: humanoid
+  mass: 70.0
+  height: 1.75
+  default_damping: 0.01
+links:
+  torso: {mass: 20.0, inertia: [0.5, 0.5, 0.3], collision_shape: box, dimensions: [0.3, 0.5, 0.2]}
+  head: {mass: 5.0, inertia: [0.05, 0.05, 0.05], collision_shape: sphere, radius: 0.1}
+  upper_arm_r: {mass: 3.0, inertia: [0.01, 0.01, 0.01], collision_shape: capsule, radius: 0.04, length: 0.3}
+  lower_arm_r: {mass: 2.0, inertia: [0.01, 0.01, 0.01], collision_shape: capsule, radius: 0.035, length: 0.25}
+  hand_r: {mass: 0.8, inertia: [0.005, 0.005, 0.005], collision_shape: box, dimensions: [0.08, 0.04, 0.16]}
+  upper_arm_l: {mass: 3.0, inertia: [0.01, 0.01, 0.01], collision_shape: capsule, radius: 0.04, length: 0.3}
+  lower_arm_l: {mass: 2.0, inertia: [0.01, 0.01, 0.01], collision_shape: capsule, radius: 0.035, length: 0.25}
+  hand_l: {mass: 0.8, inertia: [0.005, 0.005, 0.005], collision_shape: box, dimensions: [0.08, 0.04, 0.16]}
+  upper_leg_r: {mass: 8.0, inertia: [0.1, 0.1, 0.05], collision_shape: capsule, radius: 0.07, length: 0.4}
+  lower_leg_r: {mass: 5.0, inertia: [0.08, 0.08, 0.03], collision_shape: capsule, radius: 0.05, length: 0.4}
+  foot_r: {mass: 2.0, inertia: [0.02, 0.02, 0.01], collision_shape: box, dimensions: [0.12, 0.25, 0.08]}
+  upper_leg_l: {mass: 8.0, inertia: [0.1, 0.1, 0.05], collision_shape: capsule, radius: 0.07, length: 0.4}
+  lower_leg_l: {mass: 5.0, inertia: [0.08, 0.08, 0.03], collision_shape: capsule, radius: 0.05, length: 0.4}
+  foot_l: {mass: 2.0, inertia: [0.02, 0.02, 0.01], collision_shape: box, dimensions: [0.12, 0.25, 0.08]}
+joints:
+  neck: {type: revolute, parent: torso, child: head, axis: [0, 0, 1], range: [-45, 45], max_torque: 20.0, damping: 0.1}
+  shoulder_r: {type: revolute, parent: torso, child: upper_arm_r, axis: [1, 0, 0], range: [-120, 120], max_torque: 50.0, damping: 0.1}
+  elbow_r: {type: revolute, parent: upper_arm_r, child: lower_arm_r, axis: [0, 1, 0], range: [-150, 0], max_torque: 30.0, damping: 0.1}
+  wrist_r: {type: revolute, parent: lower_arm_r, child: hand_r, axis: [0, 0, 1], range: [-90, 90], max_torque: 10.0, damping: 0.05}
+  shoulder_l: {type: revolute, parent: torso, child: upper_arm_l, axis: [1, 0, 0], range: [-120, 120], max_torque: 50.0, damping: 0.1}
+  elbow_l: {type: revolute, parent: upper_arm_l, child: lower_arm_l, axis: [0, 1, 0], range: [-150, 0], max_torque: 30.0, damping: 0.1}
+  wrist_l: {type: revolute, parent: lower_arm_l, child: hand_l, axis: [0, 0, 1], range: [-90, 90], max_torque: 10.0, damping: 0.05}
+  hip_r: {type: revolute, parent: torso, child: upper_leg_r, axis: [1, 0, 0], range: [-120, 120], max_torque: 100.0, damping: 0.2}
+  knee_r: {type: revolute, parent: upper_leg_r, child: lower_leg_r, axis: [0, 1, 0], range: [0, 150], max_torque: 80.0, damping: 0.2}
+  ankle_r: {type: revolute, parent: lower_leg_r, child: foot_r, axis: [1, 0, 0], range: [-45, 45], max_torque: 40.0, damping: 0.1}
+  hip_l: {type: revolute, parent: torso, child: upper_leg_l, axis: [1, 0, 0], range: [-120, 120], max_torque: 100.0, damping: 0.2}
+  knee_l: {type: revolute, parent: upper_leg_l, child: lower_leg_l, axis: [0, 1, 0], range: [0, 150], max_torque: 80.0, damping: 0.2}
+  ankle_l: {type: revolute, parent: lower_leg_l, child: foot_l, axis: [1, 0, 0], range: [-45, 45], max_torque: 40.0, damping: 0.1}
+initial_state:
+  joint_positions: {}

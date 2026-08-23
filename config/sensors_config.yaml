@@ -1,0 +1,6 @@
+sensors:
+  proprioception: {enabled: true}
+  vision: {enabled: false, resolution: [64, 64], fov: 90.0}
+  depth: {enabled: false, resolution: [64, 64]}
+  imu: {enabled: true}
+  touch: {enabled: false}
