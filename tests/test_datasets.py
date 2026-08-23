@@ -23,6 +23,13 @@ def test_trajectory_dataset_round_trip(tmp_path: Path):
     simulator.shutdown()
 
 
+def test_trajectory_writer_rejects_non_mapping_info(tmp_path: Path):
+    path = tmp_path / "trajectory.jsonl"
+    with TrajectoryDatasetWriter(path) as writer:
+        with pytest.raises(ValueError, match="info must be a mapping"):
+            writer.append(None, None, info=["not", "a", "mapping"])
+
+
 def test_trajectory_writer_preserves_existing_file_on_failure(tmp_path: Path):
     path = tmp_path / "trajectory.jsonl"
     path.write_text("existing\n", encoding="utf-8")
