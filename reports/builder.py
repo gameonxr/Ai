@@ -9,7 +9,7 @@ from typing import Any
 from artifact_io import write_json_atomic, write_text_atomic
 
 
-KNOWN_ARTIFACT_TYPES = {"experiment_manifest", "evaluation", "benchmark", "health", "sweep"}
+KNOWN_ARTIFACT_TYPES = {"experiment_manifest", "evaluation", "benchmark", "health", "sweep", "checkpoint"}
 SUPPORTED_SCHEMA_VERSION = 1
 
 
@@ -35,6 +35,8 @@ class ReportSummary:
     artifact_errors: list[str] = field(default_factory=list)
     sweep_count: int = 0
     sweeps: list[dict[str, Any]] = field(default_factory=list)
+    checkpoint_count: int = 0
+    checkpoints: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -65,7 +67,8 @@ class ReportBuilder:
         benchmarks = [item for item in artifacts if item.get("artifact_type") == "benchmark"]
         health_reports = [item for item in artifacts if item.get("artifact_type") == "health"]
         sweeps = [item for item in artifacts if item.get("artifact_type") == "sweep"]
-        manifests = [item for item in artifacts if item.get("artifact_type") not in {"evaluation", "benchmark", "health", "sweep"} and "status" in item]
+        checkpoints = [item for item in artifacts if item.get("artifact_type") == "checkpoint"]
+        manifests = [item for item in artifacts if item.get("artifact_type") not in {"evaluation", "benchmark", "health", "sweep", "checkpoint"} and "status" in item]
         completed = [item for item in manifests if item.get("status") == "completed"]
         failed = [item for item in manifests if item.get("status") == "failed"]
         episodes = [episode for item in manifests for episode in item.get("metrics", [])]
@@ -78,7 +81,8 @@ class ReportBuilder:
         benchmark_rows = [{"config_path": item.get("config_path"), "seed": item.get("seed"), "steps": item.get("steps", 0), "simulation_seconds": item.get("simulation_seconds", 0.0), "wall_seconds": item.get("wall_seconds", 0.0), "realtime_factor": item.get("realtime_factor", 0.0)} for item in benchmarks]
         health_rows = [{"config_path": item.get("config_path"), "healthy": item.get("healthy", False), "python": item.get("python"), "platform": item.get("platform")} for item in health_reports]
         sweep_rows = [{"sweep_id": item.get("sweep_id"), "cases_requested": item.get("cases_requested", 0), "cases_completed": item.get("cases_completed", 0), "resumed_cases": item.get("resumed_cases", 0), "manifests": item.get("manifests", [])} for item in sweeps]
-        return ReportSummary(len(manifests), len(completed), len(failed), len(episodes), sum(steps), mean(rewards) if rewards else 0.0, mean(steps) if steps else 0.0, run_rows, len(evaluations), mean(evaluation_rewards) if evaluation_rewards else 0.0, evaluation_rows, len(benchmarks), mean(realtime_factors) if realtime_factors else 0.0, benchmark_rows, len(health_reports), sum(item.get("healthy", False) for item in health_reports), health_rows, artifact_errors, len(sweeps), sweep_rows)
+        checkpoint_rows = [{"run_id": item.get("run_id"), "episode": item.get("episode", 0), "step": item.get("step", 0), "version": item.get("version", 0), "current_time": item.get("current_time", 0.0)} for item in checkpoints]
+        return ReportSummary(len(manifests), len(completed), len(failed), len(episodes), sum(steps), mean(rewards) if rewards else 0.0, mean(steps) if steps else 0.0, run_rows, len(evaluations), mean(evaluation_rewards) if evaluation_rewards else 0.0, evaluation_rows, len(benchmarks), mean(realtime_factors) if realtime_factors else 0.0, benchmark_rows, len(health_reports), sum(item.get("healthy", False) for item in health_reports), health_rows, artifact_errors, len(sweeps), sweep_rows, len(checkpoints), checkpoint_rows)
 
     def write_json(self, summary: ReportSummary, path: str | Path) -> None:
         write_json_atomic(summary.to_dict(), path)
@@ -101,4 +105,8 @@ class ReportBuilder:
         if summary.sweeps:
             lines.extend(["", "| Sweep | Requested | Completed | Resumed |", "|---|---:|---:|---:|"])
             lines.extend(f"| {item['sweep_id']} | {item['cases_requested']} | {item['cases_completed']} | {item['resumed_cases']} |" for item in summary.sweeps)
+        lines.extend(["", f"- Checkpoint artifacts: {summary.checkpoint_count}"])
+        if summary.checkpoints:
+            lines.extend(["", "| Checkpoint run | Episode | Step | Version | Current time |", "|---|---:|---:|---:|---:|"])
+            lines.extend(f"| {item['run_id']} | {item['episode']} | {item['step']} | {item['version']} | {item['current_time']:.4f} |" for item in summary.checkpoints)
         write_text_atomic("\n".join(lines) + "\n", path)

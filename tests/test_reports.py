@@ -140,3 +140,15 @@ def test_report_builder_records_unsupported_known_schema(tmp_path: Path):
     summary = ReportBuilder().build(tmp_path)
     assert summary.benchmark_count == 0
     assert summary.artifact_errors == [str(future)]
+
+
+def test_report_builder_aggregates_checkpoint_artifacts(capsys, tmp_path: Path):
+    runs_dir = tmp_path / "runs"
+    assert main(["run", "--run-id", "report-checkpoint", "--manifest-dir", str(runs_dir), "--episodes", "1", "--max-steps", "1", "--checkpoint-every", "1"]) == 0
+    capsys.readouterr()
+    summary = ReportBuilder().build(tmp_path)
+    assert summary.checkpoint_count == 1
+    assert summary.checkpoints[0]["run_id"] == "report-checkpoint"
+    markdown_path = tmp_path / "checkpoint-report.md"
+    ReportBuilder().write_markdown(summary, markdown_path)
+    assert "Checkpoint artifacts: 1" in markdown_path.read_text(encoding="utf-8")
