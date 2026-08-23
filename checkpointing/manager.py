@@ -61,7 +61,14 @@ class CheckpointManager:
             raise ValueError(f"Checkpoint missing required fields: {', '.join(missing_fields)}")
         if not isinstance(payload["simulator_state"], dict) or not isinstance(payload["metrics"], dict):
             raise ValueError("Checkpoint simulator_state and metrics must be JSON objects")
-        return Checkpoint(checkpoint_version, payload["run_id"], int(payload["episode"]), int(payload["step"]), float(payload["current_time"]), payload["simulator_state"], payload["metrics"], payload.get("metadata", {}), artifact_type, schema_version)
+        simulator_state = payload["simulator_state"]
+        if "physics" not in simulator_state:
+            raise ValueError("Checkpoint simulator_state missing physics")
+        if not isinstance(simulator_state["physics"], dict):
+            raise ValueError("Checkpoint physics state must be a JSON object")
+        if "actuators" in simulator_state and not isinstance(simulator_state["actuators"], dict):
+            raise ValueError("Checkpoint actuators must be a JSON object")
+        return Checkpoint(checkpoint_version, payload["run_id"], int(payload["episode"]), int(payload["step"]), float(payload["current_time"]), simulator_state, payload["metrics"], payload.get("metadata", {}), artifact_type, schema_version)
 
     @classmethod
     def restore(cls, simulator, path: str | Path) -> Checkpoint:

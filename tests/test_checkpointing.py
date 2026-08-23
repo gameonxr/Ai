@@ -91,6 +91,46 @@ def test_checkpoint_required_fields_are_validated(tmp_path: Path):
         raise AssertionError("Incomplete checkpoint payload was accepted")
 
 
+def test_checkpoint_simulator_state_requires_physics(tmp_path: Path):
+    path = tmp_path / "missing-physics.json"
+    payload = {
+        "version": 1,
+        "run_id": "missing-physics",
+        "episode": 0,
+        "step": 0,
+        "current_time": 0.0,
+        "simulator_state": {},
+        "metrics": {},
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    try:
+        CheckpointManager.load(path)
+    except ValueError as error:
+        assert "simulator_state missing physics" in str(error)
+    else:
+        raise AssertionError("Checkpoint without physics state was accepted")
+
+
+def test_checkpoint_actuators_must_be_an_object(tmp_path: Path):
+    path = tmp_path / "bad-actuators.json"
+    payload = {
+        "version": 1,
+        "run_id": "bad-actuators",
+        "episode": 0,
+        "step": 0,
+        "current_time": 0.0,
+        "simulator_state": {"physics": {}, "actuators": []},
+        "metrics": {},
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    try:
+        CheckpointManager.load(path)
+    except ValueError as error:
+        assert "Checkpoint actuators must be a JSON object" in str(error)
+    else:
+        raise AssertionError("Invalid checkpoint actuator state was accepted")
+
+
 def test_checkpoint_state_and_metrics_must_be_objects(tmp_path: Path):
     path = tmp_path / "bad-state.json"
     payload = {
