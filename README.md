@@ -135,7 +135,7 @@ python examples/checkpoint_example.py
 
 ## Experiment orchestration
 
-`experiments/` provides a configurable runner that creates repeatable seeded episodes, writes a machine-readable run manifest, and optionally saves checkpoints at an episode cadence. Each manifest records requested episode count, maximum steps, seed, configuration path, lifecycle status, and per-episode metrics so reruns can be checked for provenance:
+`experiments/` provides a configurable runner that creates repeatable seeded episodes, writes a machine-readable run manifest, and optionally saves checkpoints at an episode cadence. Each manifest is an `artifact_type: experiment_manifest` payload with `schema_version: 1` and records requested episode count, maximum steps, seed, configuration path, lifecycle status, and per-episode metrics so reruns can be checked for provenance:
 
 ```bash
 python examples/run_experiment.py

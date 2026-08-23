@@ -26,6 +26,8 @@ class RunManifest:
     metadata: dict[str, Any] = field(default_factory=dict)
     max_steps_requested: int = 100
     seed: int | None = None
+    artifact_type: str = "experiment_manifest"
+    schema_version: int = 1
 
 
 class ExperimentRunner:

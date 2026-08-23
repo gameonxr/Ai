@@ -89,3 +89,30 @@ def test_sweep_runner_rejects_invalid_case_types(tmp_path: Path):
 def test_sweep_runner_rejects_invalid_sweep_id(tmp_path: Path):
     with pytest.raises(ValueError):
         SweepRunner("", tmp_path)
+
+
+def test_experiment_manifest_has_artifact_taxonomy(tmp_path: Path):
+    from experiments import ExperimentRunner
+
+    ExperimentRunner("config/simulator_config.yaml", "typed", tmp_path).run(episodes=1, max_steps=1, seed=8)
+    payload = json.loads((tmp_path / "typed.json").read_text(encoding="utf-8"))
+    assert payload["artifact_type"] == "experiment_manifest"
+    assert payload["schema_version"] == 1
+
+
+def test_sweep_loader_migrates_legacy_manifest(tmp_path: Path):
+    legacy_path = tmp_path / "legacy.json"
+    legacy_path.write_text(json.dumps({
+        "run_id": "legacy",
+        "status": "completed",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "finished_at": "2026-01-01T00:00:01+00:00",
+        "config_path": "config/simulator_config.yaml",
+        "episodes_requested": 1,
+        "episodes_completed": 1,
+        "total_steps": 1,
+        "metrics": [],
+    }), encoding="utf-8")
+    manifest = SweepRunner("legacy-sweep", tmp_path)._load_manifest(legacy_path)
+    assert manifest.artifact_type == "experiment_manifest"
+    assert manifest.schema_version == 1

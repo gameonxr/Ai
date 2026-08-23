@@ -125,6 +125,10 @@ class SweepRunner:
     def _load_manifest(path: Path) -> RunManifest:
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(payload, dict):
+                raise ValueError("manifest payload must be an object")
+            payload.setdefault("artifact_type", "experiment_manifest")
+            payload.setdefault("schema_version", 1)
             return RunManifest(**payload)
         except (OSError, TypeError, ValueError, json.JSONDecodeError) as error:
             raise ValueError(f"invalid existing manifest: {path}") from error
