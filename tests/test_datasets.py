@@ -33,6 +33,20 @@ def test_trajectory_writer_preserves_existing_file_on_failure(tmp_path: Path):
     assert not list(tmp_path.glob(".trajectory.jsonl.*.tmp"))
 
 
+def test_trajectory_invalid_header_json_is_contextual(tmp_path: Path):
+    path = tmp_path / "invalid-header.jsonl"
+    path.write_text("{invalid}\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="Invalid trajectory dataset JSON at line 1"):
+        load_dataset(path)
+
+
+def test_trajectory_invalid_transition_json_is_contextual(tmp_path: Path):
+    path = tmp_path / "invalid-transition.jsonl"
+    path.write_text('{"type":"metadata","schema_version":1}\n{invalid}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="Invalid trajectory dataset JSON at line 2"):
+        load_dataset(path)
+
+
 def test_trajectory_header_must_be_an_object(tmp_path: Path):
     path = tmp_path / "list-header.jsonl"
     path.write_text("[]\n", encoding="utf-8")

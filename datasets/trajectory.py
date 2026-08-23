@@ -65,7 +65,10 @@ def load_dataset(path: str | Path) -> TrajectoryDataset:
     lines = Path(path).read_text(encoding="utf-8").splitlines()
     if not lines:
         raise ValueError("Trajectory dataset is empty")
-    header = json.loads(lines[0])
+    try:
+        header = json.loads(lines[0])
+    except json.JSONDecodeError as error:
+        raise ValueError(f"Invalid trajectory dataset JSON at line 1: {error.msg}") from error
     if not isinstance(header, dict):
         raise ValueError("Trajectory dataset header must be a JSON object")
     if header.get("type") != "metadata":
@@ -81,8 +84,11 @@ def load_dataset(path: str | Path) -> TrajectoryDataset:
     if not isinstance(metadata, dict):
         raise ValueError("Trajectory dataset metadata must be a JSON object")
     transitions = []
-    for line in lines[1:]:
-        record = json.loads(line)
+    for line_number, line in enumerate(lines[1:], start=2):
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError as error:
+            raise ValueError(f"Invalid trajectory dataset JSON at line {line_number}: {error.msg}") from error
         if not isinstance(record, dict):
             raise ValueError("Trajectory transition must be a JSON object")
         if record.get("type") != "transition":
