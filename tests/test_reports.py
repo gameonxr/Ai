@@ -148,6 +148,36 @@ def test_report_builder_skips_malformed_numeric_artifacts(tmp_path: Path):
     assert len(summary.artifact_errors) == 5
 
 
+def test_report_builder_skips_malformed_checkpoint_artifacts(tmp_path: Path):
+    (tmp_path / "bad-checkpoint-id.json").write_text(json.dumps({
+        "artifact_type": "checkpoint",
+        "schema_version": 1,
+        "run_id": "",
+        "version": 1,
+        "episode": 0,
+        "step": 0,
+        "current_time": 0.0,
+        "simulator_state": {},
+        "metrics": {},
+        "metadata": {},
+    }), encoding="utf-8")
+    (tmp_path / "bad-checkpoint-state.json").write_text(json.dumps({
+        "artifact_type": "checkpoint",
+        "schema_version": 1,
+        "run_id": "bad-state",
+        "version": 1,
+        "episode": 0,
+        "step": 0,
+        "current_time": 0.0,
+        "simulator_state": [],
+        "metrics": {},
+        "metadata": {},
+    }), encoding="utf-8")
+    summary = ReportBuilder().build(tmp_path)
+    assert summary.checkpoint_count == 0
+    assert summary.artifact_errors == [str(tmp_path / "bad-checkpoint-id.json"), str(tmp_path / "bad-checkpoint-state.json")]
+
+
 def test_report_builder_skips_malformed_sweep_artifacts(tmp_path: Path):
     (tmp_path / "bad-sweep-counters.json").write_text(json.dumps({
         "artifact_type": "sweep",

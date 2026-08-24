@@ -108,6 +108,17 @@ class ReportBuilder:
                     manifests = payload.get("manifests", [])
                     if not isinstance(manifests, list) or any(not isinstance(item, str) or not item.strip() for item in manifests):
                         raise ValueError("sweep manifests must be a list of non-empty strings")
+                elif artifact_type == "checkpoint":
+                    if not isinstance(payload.get("run_id"), str) or not payload["run_id"].strip():
+                        raise ValueError("checkpoint run_id must be a non-empty string")
+                    _nonnegative_int(payload.get("version", 0))
+                    _nonnegative_int(payload.get("episode", 0))
+                    _nonnegative_int(payload.get("step", 0))
+                    _finite_float(payload.get("current_time", 0.0))
+                    if not isinstance(payload.get("simulator_state", {}), dict) or not isinstance(payload.get("metrics", {}), dict):
+                        raise ValueError("checkpoint state and metrics must be objects")
+                    if not isinstance(payload.get("metadata", {}), dict):
+                        raise ValueError("checkpoint metadata must be an object")
                 elif artifact_type not in {"evaluation", "benchmark", "health", "sweep", "checkpoint", "report"} and "status" in payload:
                     if payload["status"] not in {"running", "completed", "failed"}:
                         raise ValueError("manifest status must be recognized")
