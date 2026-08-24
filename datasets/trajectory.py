@@ -67,7 +67,11 @@ class TrajectoryDatasetWriter:
 
 
 def load_dataset(path: str | Path) -> TrajectoryDataset:
-    lines = Path(path).read_text(encoding="utf-8").splitlines()
+    dataset_path = Path(path)
+    try:
+        lines = dataset_path.read_text(encoding="utf-8").splitlines()
+    except OSError as error:
+        raise ValueError(f"Unable to read trajectory dataset {dataset_path}: {error}") from error
     if not lines:
         raise ValueError("Trajectory dataset is empty")
     try:

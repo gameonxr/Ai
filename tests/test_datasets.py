@@ -46,6 +46,12 @@ def test_trajectory_writer_preserves_existing_file_on_failure(tmp_path: Path):
     assert not list(tmp_path.glob(".trajectory.jsonl.*.tmp"))
 
 
+def test_trajectory_loader_reports_missing_file(tmp_path: Path):
+    missing = tmp_path / "missing.jsonl"
+    with pytest.raises(ValueError, match="Unable to read trajectory dataset .+missing.jsonl:"):
+        load_dataset(missing)
+
+
 def test_trajectory_loader_rejects_malformed_transition_fields(tmp_path: Path):
     prefix = '{"type":"metadata","schema_version":1}\n'
     cases = [
