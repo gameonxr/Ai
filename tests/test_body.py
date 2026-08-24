@@ -22,6 +22,20 @@ def test_joint_rejects_malformed_configuration():
             Joint.from_config("neck", config)  # type: ignore[arg-type]
 
 
+def test_link_rejects_malformed_configuration():
+    from body.link import Link
+
+    cases = (
+        ([], "Link config must be a mapping"),
+        ({"mass": "1.0"}, "Link mass must be a finite positive number"),
+        ({"inertia": [1.0, 0.0, 1.0]}, "Link inertia must be a finite positive 3-vector"),
+        ({"collision_shape": ""}, "Link collision_shape must be a non-empty string"),
+    )
+    for config, message in cases:
+        with pytest.raises(ValueError, match=message):
+            Link.from_config("torso", config)  # type: ignore[arg-type]
+
+
 def test_body_has_expected_dof():
     body = BodyLoader.load("config/body_humanoid.yaml")
     assert body.dof >= 12
