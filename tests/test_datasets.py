@@ -46,6 +46,28 @@ def test_trajectory_writer_preserves_existing_file_on_failure(tmp_path: Path):
     assert not list(tmp_path.glob(".trajectory.jsonl.*.tmp"))
 
 
+def test_trajectory_loader_rejects_malformed_transition_fields(tmp_path: Path):
+    prefix = '{"type":"metadata","schema_version":1}\n'
+    cases = [
+        ('{"type":"transition"}\n', "missing required fields"),
+        ('{"type":"transition","observation":[],"action":{},"reward":1,"terminated":false}\n', "observation at line 2 must be a JSON object"),
+        ('{"type":"transition","observation":{},"action":[],"reward":1,"terminated":false}\n', "action at line 2 must be a JSON object"),
+        ('{"type":"transition","observation":{},"action":{},"reward":"bad","terminated":false}\n', "reward at line 2 must be numeric"),
+        ('{"type":"transition","observation":{},"action":{},"reward":1,"terminated":0}\n', "terminated at line 2 must be a boolean"),
+        ('{"type":"transition","observation":{},"action":{},"reward":1,"terminated":false,"info":[]}\n', "info at line 2 must be a JSON object"),
+    ]
+    for index, (transition, message) in enumerate(cases):
+        path = tmp_path / f"bad-transition-{index}.jsonl"
+        path.write_text(prefix + transition, encoding="utf-8")
+        with pytest.raises(ValueError, match=message):
+            load_dataset(path)
+
+    non_finite = tmp_path / "non-finite-reward.jsonl"
+    non_finite.write_text(prefix + '{"type":"transition","observation":{},"action":{},"reward":NaN,"terminated":false}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="reward at line 2 must be finite"):
+        load_dataset(non_finite)
+
+
 def test_trajectory_invalid_header_json_is_contextual(tmp_path: Path):
     path = tmp_path / "invalid-header.jsonl"
     path.write_text("{invalid}\n", encoding="utf-8")

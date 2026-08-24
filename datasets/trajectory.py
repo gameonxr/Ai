@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import math
 import json
 import os
 from pathlib import Path
@@ -97,5 +98,24 @@ def load_dataset(path: str | Path) -> TrajectoryDataset:
             raise ValueError("Trajectory transition must be a JSON object")
         if record.get("type") != "transition":
             raise ValueError("Unexpected trajectory record type")
+        required_fields = ("observation", "action", "reward", "terminated")
+        missing_fields = [field for field in required_fields if field not in record]
+        if missing_fields:
+            raise ValueError(f"Trajectory transition missing required fields: {', '.join(missing_fields)}")
+        if not isinstance(record["observation"], dict):
+            raise ValueError(f"Trajectory transition observation at line {line_number} must be a JSON object")
+        if not isinstance(record["action"], dict):
+            raise ValueError(f"Trajectory transition action at line {line_number} must be a JSON object")
+        try:
+            reward = float(record["reward"])
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"Trajectory transition reward at line {line_number} must be numeric") from error
+        if not math.isfinite(reward):
+            raise ValueError(f"Trajectory transition reward at line {line_number} must be finite")
+        if not isinstance(record["terminated"], bool):
+            raise ValueError(f"Trajectory transition terminated at line {line_number} must be a boolean")
+        info = record.get("info", {})
+        if not isinstance(info, dict):
+            raise ValueError(f"Trajectory transition info at line {line_number} must be a JSON object")
         transitions.append(record)
     return TrajectoryDataset(metadata, transitions)
