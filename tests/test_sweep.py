@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from cli import main
-from experiments import ExperimentRunner, SweepRunner
+from experiments import ExperimentRunner, RunManifest, SweepResult, SweepRunner
 from reports import ReportBuilder
 
 
@@ -22,6 +22,19 @@ def test_sweep_runner_writes_ordered_manifests_and_metadata(tmp_path: Path):
     assert payload["metadata"]["sweep_id"] == "lr-sweep"
     assert payload["metadata"]["sweep_index"] == 0
     assert payload["metadata"]["parameters"] == {"learning_rate": 0.1}
+
+
+def test_sweep_result_artifact_rejects_malformed_fields():
+    manifest = RunManifest("run", "completed", "started", "finished", "config.yaml", 1, 1, 1)
+    malformed = [
+        (SweepResult("", 1, [manifest]), "sweep_id must be a non-empty string"),
+        (SweepResult("sweep", 2, [manifest]), "manifest count must equal cases_requested"),
+        (SweepResult("sweep", 1, [manifest], resumed_cases=2), "resumed_cases cannot exceed cases_requested"),
+        (SweepResult("sweep", 2, [manifest, manifest]), "manifest run_id values must be unique"),
+    ]
+    for result, message in malformed:
+        with pytest.raises(ValueError, match=message):
+            result.to_dict()
 
 
 def test_sweep_runner_loads_json_cases_and_cli(capsys, tmp_path: Path):

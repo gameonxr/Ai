@@ -23,6 +23,25 @@ class SweepResult:
         return sum(manifest.status == "completed" for manifest in self.manifests)
 
     def to_dict(self) -> dict[str, Any]:
+        if not isinstance(self.sweep_id, str) or not self.sweep_id.strip():
+            raise ValueError("sweep_id must be a non-empty string")
+        if isinstance(self.cases_requested, bool) or not isinstance(self.cases_requested, int) or self.cases_requested < 1:
+            raise ValueError("cases_requested must be a positive integer")
+        if isinstance(self.resumed_cases, bool) or not isinstance(self.resumed_cases, int) or self.resumed_cases < 0:
+            raise ValueError("resumed_cases must be a non-negative integer")
+        if self.resumed_cases > self.cases_requested:
+            raise ValueError("resumed_cases cannot exceed cases_requested")
+        if not isinstance(self.manifests, list) or any(not isinstance(manifest, RunManifest) for manifest in self.manifests):
+            raise ValueError("manifests must be a list of RunManifest objects")
+        if len(self.manifests) != self.cases_requested:
+            raise ValueError("manifest count must equal cases_requested")
+        run_ids = [manifest.run_id for manifest in self.manifests]
+        if any(not isinstance(run_id, str) or not run_id.strip() for run_id in run_ids):
+            raise ValueError("manifest run_id values must be non-empty strings")
+        if len(set(run_ids)) != len(run_ids):
+            raise ValueError("manifest run_id values must be unique")
+        for manifest in self.manifests:
+            manifest.to_artifact_dict()
         return {
             "artifact_type": "sweep",
             "schema_version": 1,
