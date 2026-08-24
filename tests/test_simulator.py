@@ -29,6 +29,21 @@ def test_simulator_preserves_strict_environment_values(monkeypatch):
         Simulator("config/simulator_config.yaml")
 
 
+def test_floor_configuration_controls_contact_observations(monkeypatch):
+    from simulator.config_loader import ConfigLoader
+
+    base = ConfigLoader("config/simulator_config.yaml").load()
+    base["environment"]["floor_enabled"] = False
+    base["sensors"]["loaded"]["sensors"]["touch"]["enabled"] = True
+    monkeypatch.setattr(ConfigLoader, "load", lambda self: base)
+    simulator = Simulator("config/simulator_config.yaml")
+    try:
+        observation = simulator.step()
+        assert observation.touch == {"contacts": []}
+    finally:
+        simulator.shutdown()
+
+
 def test_simulator_set_brain_requires_interface_or_none():
     sim = Simulator("config/simulator_config.yaml")
     try:

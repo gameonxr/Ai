@@ -96,7 +96,7 @@ class Simulator:
                 return observation
             self.physics.step(self.timestep)
             state = self.physics.get_body_state()
-            state["contacts"] = self.physics.get_contact_info()
+            state["contacts"] = self.physics.get_contact_info() if self.world.floor_enabled else []
             observation = self.observation_builder.build(state, self.current_time)
             action_applied = False
             invalid_action = False
