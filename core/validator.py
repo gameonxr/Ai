@@ -47,6 +47,9 @@ class ActionValidator:
                 mode = command.get("mode", "torque")
             else:
                 value, mode = command, "torque"
+            if mode not in {"torque", "position"}:
+                errors.append(f"Invalid control mode for {joint}: {mode!r}")
+                continue
             valid, clamped, error = self._value(joint, value)
             if valid:
                 commands[joint] = {"target": clamped, "mode": mode}

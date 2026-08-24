@@ -16,6 +16,14 @@ def test_unknown_and_nan_commands_are_rejected():
     assert not valid and len(errors) == 2
 
 
+def test_unsupported_motor_mode_is_rejected():
+    check, _ = validator()
+    valid, action, errors = check.validate(Action(motor_commands={"neck": {"target": 0.1, "mode": "velocity"}}))
+    assert not valid
+    assert action.metadata.get("noop") is True
+    assert errors == ["Invalid control mode for neck: 'velocity'"]
+
+
 def test_commands_are_clamped():
     check, body = validator()
     valid, action, errors = check.validate(Action(joint_targets={"neck": 1000.0}))
