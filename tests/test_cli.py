@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from cli import main
 
 
@@ -28,6 +30,19 @@ def test_cli_validate_reports_config_errors(capsys, tmp_path: Path, monkeypatch)
     monkeypatch.setattr("cli.ConfigurationValidator.validate", fail_validation)
     assert main(["validate", str(missing)]) == 1
     assert "Configuration validation failed: synthetic validation failure" in capsys.readouterr().err
+
+
+def test_cli_rejects_invalid_numeric_arguments():
+    invalid_args = [
+        ["benchmark", "--steps", "0"],
+        ["evaluate", "--episodes", "-1"],
+        ["evaluate", "--reward-per-step", "nan"],
+        ["run", "--checkpoint-every", "-1"],
+    ]
+    for argv in invalid_args:
+        with pytest.raises(SystemExit) as error:
+            main(argv)
+        assert error.value.code == 2
 
 
 def test_cli_benchmark(capsys):

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from importlib.resources import files
 from pathlib import Path
@@ -15,6 +16,36 @@ from health import collect_health
 from reports import ReportBuilder
 from simulator import Simulator
 from training import RandomTorquePolicy
+
+
+def _positive_int(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("must be a positive integer") from error
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return parsed
+
+
+def _nonnegative_int(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("must be a non-negative integer") from error
+    if parsed < 0:
+        raise argparse.ArgumentTypeError("must be a non-negative integer")
+    return parsed
+
+
+def _finite_float(value: str) -> float:
+    try:
+        parsed = float(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("must be a finite number") from error
+    if not math.isfinite(parsed):
+        raise argparse.ArgumentTypeError("must be a finite number")
+    return parsed
 
 
 def default_simulator_config() -> str:
@@ -33,7 +64,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     benchmark = subparsers.add_parser("benchmark", help="run a deterministic step benchmark")
     benchmark.add_argument("--config", default=default_simulator_config())
-    benchmark.add_argument("--steps", type=int, default=1000)
+    benchmark.add_argument("--steps", type=_positive_int, default=1000)
     benchmark.add_argument("--seed", type=int, default=42)
     benchmark.add_argument("--json-out", help="write a metadata-rich benchmark artifact")
 
@@ -49,10 +80,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     evaluate = subparsers.add_parser("evaluate", help="evaluate the seeded baseline policy")
     evaluate.add_argument("--config", default=default_simulator_config())
-    evaluate.add_argument("--episodes", type=int, default=5)
-    evaluate.add_argument("--max-steps", type=int, default=100)
+    evaluate.add_argument("--episodes", type=_positive_int, default=5)
+    evaluate.add_argument("--max-steps", type=_positive_int, default=100)
     evaluate.add_argument("--seed", type=int, default=42)
-    evaluate.add_argument("--reward-per-step", type=float, default=1.0)
+    evaluate.add_argument("--reward-per-step", type=_finite_float, default=1.0)
     evaluate.add_argument("--json-out", help="write a metadata-rich evaluation artifact")
 
     sweep = subparsers.add_parser("sweep", help="run a deterministic list of experiment cases")
@@ -66,10 +97,10 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--config", default=default_simulator_config())
     run.add_argument("--run-id", default="experiment")
     run.add_argument("--manifest-dir", default="artifacts/runs")
-    run.add_argument("--episodes", type=int, default=1)
-    run.add_argument("--max-steps", type=int, default=100)
+    run.add_argument("--episodes", type=_positive_int, default=1)
+    run.add_argument("--max-steps", type=_positive_int, default=100)
     run.add_argument("--seed", type=int, default=42)
-    run.add_argument("--checkpoint-every", type=int, default=0)
+    run.add_argument("--checkpoint-every", type=_nonnegative_int, default=0)
     return parser
 
 
