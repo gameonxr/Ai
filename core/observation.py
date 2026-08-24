@@ -23,6 +23,7 @@ class Observation:
     proprioception: dict | None = None
     vision: dict | None = None
     depth: dict | None = None
+    segmentation: dict | None = None
     imu: dict | None = None
     touch: dict | None = None
     info: dict = field(default_factory=dict)
@@ -34,7 +35,7 @@ class Observation:
             raise ValueError("Observation requires a finite numeric timestamp")
 
     def to_dict(self) -> dict:
-        return _json_safe({"timestamp": self.timestamp, "proprioception": self.proprioception, "vision": self.vision, "depth": self.depth, "imu": self.imu, "touch": self.touch, "info": self.info})
+        return _json_safe({"timestamp": self.timestamp, "proprioception": self.proprioception, "vision": self.vision, "depth": self.depth, "segmentation": self.segmentation, "imu": self.imu, "touch": self.touch, "info": self.info})
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), sort_keys=True)

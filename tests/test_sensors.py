@@ -5,6 +5,7 @@ import pytest
 
 from body import BodyLoader
 from sensors.depth import DepthSensor
+from sensors.segmentation import SegmentationSensor
 from sensors.imu import IMUSensor
 from sensors.proprioception import ProprioceptionSensor
 from sensors.sensor_registry import build_sensors
@@ -91,6 +92,28 @@ def test_depth_sensor_rejects_invalid_range(config):
         DepthSensor("depth", config)
 
 
+def test_segmentation_sensor_returns_stable_body_labels():
+    body = BodyLoader.load("config/body_humanoid.yaml")
+    sensor = SegmentationSensor("segmentation", {"resolution": [32, 24]}, body=body)
+    state = {"joint_positions": {name: 0.0 for name in body.joints}, "world": {"floor_enabled": True, "objects": [{"type": "floor", "size": (4.0, 6.0)}]}}
+    reading = sensor.observe(state)
+    assert reading["available"] is True
+    assert reading["segmentation"].shape == (24, 32)
+    assert reading["segmentation"].dtype.name == "int32"
+    assert reading["label_map"]["background"] == 0
+    assert reading["label_map"]["floor"] == 1
+    assert reading["label_map"]["torso"] >= 2
+    assert reading["valid_pixels"] > 0
+    assert set(reading["segmentation"].flat) <= set(reading["label_map"].values())
+
+
+def test_segmentation_sensor_without_body_reports_unavailable_map():
+    reading = SegmentationSensor("segmentation").observe({"joint_positions": {}})
+    assert reading["available"] is False
+    assert reading["valid_pixels"] == 0
+    assert reading["segmentation"].max() == 0
+
+
 def test_sensor_base_rejects_malformed_constructor_inputs():
     for name, config, message in (("", {}, "sensor name must be a non-empty string"), ("imu", [], "sensor config must be an object"), ("imu", {"enabled": 1}, "sensor enabled must be a boolean")):
         with pytest.raises(ValueError, match=message):
@@ -127,4 +150,4 @@ def test_observation_builder_rejects_invalid_inputs():
 def test_only_enabled_sensors_are_exposed():
     sensors = build_sensors({"proprioception": {"enabled": True}, "vision": {"enabled": False}, "imu": {"enabled": True}})
     observation = ObservationBuilder(sensors).build({"joint_positions": {}, "joint_velocities": {}, "joint_accelerations": {}, "body_position": [0,0,1], "body_velocity": [0,0,0], "body_rotation": [0,0,0,1], "body_angular_velocity": [0,0,0], "gravity": [0,0,-9.81]}, 0.0)
-    assert observation.proprioception is not None and observation.imu is not None and observation.vision is None
+    assert observation.proprioception is not None and observation.imu is not None and observation.vision is None and observation.segmentation is None

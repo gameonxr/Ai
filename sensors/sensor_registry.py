@@ -1,10 +1,11 @@
 from .depth import DepthSensor
+from .segmentation import SegmentationSensor
 from .imu import IMUSensor
 from .proprioception import ProprioceptionSensor
 from .touch import TouchSensor
 from .vision import VisionSensor
 
-SENSOR_TYPES = {"proprioception": ProprioceptionSensor, "vision": VisionSensor, "depth": DepthSensor, "imu": IMUSensor, "touch": TouchSensor}
+SENSOR_TYPES = {"proprioception": ProprioceptionSensor, "vision": VisionSensor, "depth": DepthSensor, "segmentation": SegmentationSensor, "imu": IMUSensor, "touch": TouchSensor}
 
 
 def build_sensors(config: dict, body=None) -> dict:
@@ -17,5 +18,5 @@ def build_sensors(config: dict, body=None) -> dict:
         if settings is not None and not isinstance(settings, dict):
             raise ValueError(f"sensor settings for {name} must be an object")
         sensor_config = settings or {}
-        sensors[name] = SENSOR_TYPES[name](name, sensor_config, body=body) if name in {"vision", "depth"} else SENSOR_TYPES[name](name, sensor_config)
+        sensors[name] = SENSOR_TYPES[name](name, sensor_config, body=body) if name in {"vision", "depth", "segmentation"} else SENSOR_TYPES[name](name, sensor_config)
     return sensors
