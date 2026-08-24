@@ -63,9 +63,9 @@ class VectorizedSimulator:
                 raise ValueError("actions must be a list or tuple")
             if len(actions) != self.num_envs:
                 raise ValueError("actions length must match num_envs")
+            if any(not isinstance(action, Action) for action in actions):
+                raise TypeError("all vectorized actions must be Action objects")
             for brain, action in zip(self._brains, actions):
-                if not isinstance(action, Action):
-                    raise TypeError("all vectorized actions must be Action objects")
                 brain.pending = action
         return [simulator.step() for simulator in self.envs]
 

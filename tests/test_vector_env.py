@@ -51,6 +51,20 @@ def test_vectorized_step_requires_action_container():
         vector.close()
 
 
+def test_vectorized_step_validates_batch_before_mutating_pending_actions():
+    vector = VectorizedSimulator("config/simulator_config.yaml", num_envs=2)
+    vector.reset(seed=1)
+    try:
+        with pytest.raises(TypeError, match="all vectorized actions must be Action objects"):
+            vector.step([Action(joint_targets={"neck": 0.25}), object()])  # type: ignore[list-item]
+        vector.step()
+        states = vector.get_states()
+        assert all(state["step_count"] == 2 for state in states)
+        assert all(state["metrics"]["actions"] == 0 for state in states)
+    finally:
+        vector.close()
+
+
 def test_vectorized_action_count_is_validated():
     vector = VectorizedSimulator("config/simulator_config.yaml", num_envs=2)
     vector.reset(seed=1)
