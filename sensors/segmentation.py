@@ -22,6 +22,7 @@ class SegmentationSensor(Sensor):
             raise ValueError("segmentation view_scale must be a finite positive number")
         self.resolution = (int(resolution[0]), int(resolution[1]))
         self.view_scale = float(view_scale)
+        self.target = self.camera_target()
         self.body = body
         self.label_map = {"background": 0, "floor": 1}
         if body is not None:
@@ -36,34 +37,35 @@ class SegmentationSensor(Sensor):
             floor_width = self._floor_width(physics_state)
             x_half = max(floor_width / 2.0 if floor_width is not None else 1.0, 1.0) * self.view_scale
             view_half_height = max(1.0, x_half * self.resolution[1] / self.resolution[0])
-            y_min = -0.15
-            y_max = y_min + 2.0 * view_half_height
-            projected = {name: self._pixel(point, x_half, y_min, y_max) for name, point in points.items()}
+            target_x, target_y = self.target if self.target is not None else (0.0, -0.15 + view_half_height)
+            y_min = target_y - view_half_height
+            y_max = target_y + view_half_height
+            projected = {name: self._pixel(point, x_half, y_min, y_max, target_x) for name, point in points.items()}
             for joint in self.body.joints.values():
                 if joint.parent in projected and joint.child in projected:
                     self._draw_line(labels, projected[joint.parent], projected[joint.child], self.label_map[joint.child])
             for name, pixel in projected.items():
                 self._set_label(labels, pixel, self.label_map.get(name, 0), radius=max(1, min(self.resolution) // 32))
             if floor_width is not None:
-                floor_y = self._pixel((0.0, 0.0), x_half, y_min, y_max)[1]
-                left = self._pixel((-floor_width / 2.0, 0.0), x_half, y_min, y_max)[0]
-                right = self._pixel((floor_width / 2.0, 0.0), x_half, y_min, y_max)[0]
+                floor_y = self._pixel((0.0, 0.0), x_half, y_min, y_max, target_x)[1]
+                left = self._pixel((-floor_width / 2.0, 0.0), x_half, y_min, y_max, target_x)[0]
+                right = self._pixel((floor_width / 2.0, 0.0), x_half, y_min, y_max, target_x)[0]
                 self._draw_line(labels, (left, floor_y), (right, floor_y), self.label_map["floor"])
         return {
             "segmentation": labels,
             "resolution": self.resolution,
             "frame_id": self.frame_id(physics_state),
-            "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": self.resolution, "view_scale": self.view_scale},
+            "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": self.resolution, "view_scale": self.view_scale, "target": self.target},
             "available": self.body is not None,
             "source": "headless_body_projection" if self.body is not None else "unconfigured_body_projection",
             "label_map": dict(self.label_map),
             "valid_pixels": int(np.count_nonzero(labels)),
         }
 
-    def _pixel(self, point: tuple[float, float], x_half: float, y_min: float, y_max: float) -> tuple[int, int]:
+    def _pixel(self, point: tuple[float, float], x_half: float, y_min: float, y_max: float, target_x: float = 0.0) -> tuple[int, int]:
         width, height = self.resolution
         x, y = point
-        pixel_x = round((x + x_half) / (2.0 * x_half) * (width - 1))
+        pixel_x = round((x - target_x + x_half) / (2.0 * x_half) * (width - 1))
         pixel_y = round((y_max - y) / (y_max - y_min) * (height - 1))
         return max(0, min(width - 1, pixel_x)), max(0, min(height - 1, pixel_y))
 

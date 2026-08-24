@@ -78,6 +78,22 @@ def test_vision_sensor_rejects_invalid_view_scale(config):
         VisionSensor("vision", config)
 
 
+@pytest.mark.parametrize("target", [[0.0], [0.0, True], [0.0, "1.0"], [float("nan"), 1.0]])
+def test_vision_sensor_rejects_invalid_camera_target(target):
+    with pytest.raises(ValueError, match="camera target"):
+        VisionSensor("vision", {"target": target})
+
+
+def test_vision_camera_target_changes_horizontal_framing():
+    body = BodyLoader.load("config/body_humanoid.yaml")
+    state = {"joint_positions": {name: 0.0 for name in body.joints}}
+    centered = VisionSensor("vision", {"resolution": [64, 64], "target": [0.0, 0.85]}, body=body).observe(state)
+    shifted = VisionSensor("vision", {"resolution": [64, 64], "target": [0.5, 0.85]}, body=body).observe(state)
+    assert centered["camera"]["target"] == (0.0, 0.85)
+    assert shifted["camera"]["target"] == (0.5, 0.85)
+    assert not np.array_equal(centered["rgb"], shifted["rgb"])
+
+
 def test_vision_view_scale_changes_frame_coverage():
     body = BodyLoader.load("config/body_humanoid.yaml")
     state = {"joint_positions": {name: 0.0 for name in body.joints}}
@@ -213,6 +229,16 @@ def test_visual_fusion_reports_channel_schema_metadata():
 def test_visual_fusion_rejects_invalid_channel_schema(reading, message):
     with pytest.raises(ValueError, match=message):
         build_visual_fusion({"vision" if message == "RGB" else "depth": reading})
+
+
+def test_visual_fusion_rejects_mismatched_camera_targets():
+    camera = {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": (32, 24)}
+    readings = {
+        "vision": {"frame_id": 1.0, "camera": {**camera, "target": (0.0, 0.85)}, "available": True, "rgb": np.zeros((24, 32, 3), dtype=np.uint8)},
+        "depth": {"frame_id": 1.0, "camera": {**camera, "target": (0.5, 0.85)}, "available": True, "depth": np.zeros((24, 32), dtype=np.float32)},
+    }
+    with pytest.raises(ValueError, match="target"):
+        build_visual_fusion(readings)
 
 
 def test_visual_fusion_rejects_mismatched_frames():

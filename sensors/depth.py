@@ -27,6 +27,7 @@ class DepthSensor(Sensor):
             raise ValueError("depth view_scale must be a finite positive number")
         self.resolution = (int(resolution[0]), int(resolution[1]))
         self.view_scale = float(view_scale)
+        self.target = self.camera_target()
         self.near = float(near)
         self.far = float(far)
         self.body = body
@@ -40,10 +41,11 @@ class DepthSensor(Sensor):
             floor_width = self._floor_width(physics_state)
             x_half = max(floor_width / 2.0 if floor_width is not None else 1.0, 1.0) * self.view_scale
             view_half_height = max(1.0, x_half * self.resolution[1] / self.resolution[0])
-            z_min = -0.15
-            z_max = z_min + 2.0 * view_half_height
+            target_x, target_z = self.target if self.target is not None else (0.0, -0.15 + view_half_height)
+            z_min = target_z - view_half_height
+            z_max = target_z + view_half_height
             projected = {
-                name: (self._pixel((point[0], point[2]), x_half, z_min, z_max), self._distance(point[1]))
+                name: (self._pixel((point[0], point[2]), x_half, z_min, z_max, target_x), self._distance(point[1]))
                 for name, point in points.items()
             }
             for joint in self.body.joints.values():
@@ -57,7 +59,7 @@ class DepthSensor(Sensor):
             "near": self.near,
             "far": self.far,
             "frame_id": self.frame_id(physics_state),
-            "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": self.resolution, "near": self.near, "far": self.far, "view_scale": self.view_scale},
+            "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": self.resolution, "near": self.near, "far": self.far, "view_scale": self.view_scale, "target": self.target},
             "available": self.body is not None,
             "source": "headless_body_projection" if self.body is not None else "unconfigured_body_projection",
             "valid_pixels": int(np.count_nonzero(depth < self.far)),
@@ -66,10 +68,10 @@ class DepthSensor(Sensor):
     def _distance(self, y: float) -> float:
         return float(np.clip(2.0 - y, self.near, self.far))
 
-    def _pixel(self, point: tuple[float, float], x_half: float, z_min: float, z_max: float) -> tuple[int, int]:
+    def _pixel(self, point: tuple[float, float], x_half: float, z_min: float, z_max: float, target_x: float = 0.0) -> tuple[int, int]:
         width, height = self.resolution
         x, z = point
-        pixel_x = round((x + x_half) / (2.0 * x_half) * (width - 1))
+        pixel_x = round((x - target_x + x_half) / (2.0 * x_half) * (width - 1))
         pixel_y = round((z_max - z) / (z_max - z_min) * (height - 1))
         return max(0, min(width - 1, pixel_x)), max(0, min(height - 1, pixel_y))
 

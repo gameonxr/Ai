@@ -17,6 +17,7 @@ class PerceptionSensor(Sensor):
         if isinstance(view_scale, bool) or not isinstance(view_scale, (int, float)) or not math.isfinite(float(view_scale)) or float(view_scale) <= 0:
             raise ValueError("perception view_scale must be a finite positive number")
         self.view_scale = float(view_scale)
+        self.target = self.camera_target()
         self.body = body
 
     def observe(self, physics_state: dict[str, Any]) -> dict[str, Any]:
@@ -27,7 +28,7 @@ class PerceptionSensor(Sensor):
                 "available": False,
                 "source": "unconfigured_body_projection",
                 "frame_id": self.frame_id(physics_state),
-                "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "view_scale": self.view_scale},
+                "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "view_scale": self.view_scale, "target": self.target},
                 "visible_links": [],
                 "link_positions": {},
                 "body_bounds": None,
@@ -57,7 +58,7 @@ class PerceptionSensor(Sensor):
             "available": True,
             "source": "headless_body_projection",
             "frame_id": self.frame_id(physics_state),
-            "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "view_scale": self.view_scale},
+            "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "view_scale": self.view_scale, "target": self.target},
             "visible_links": list(points),
             "link_positions": link_positions,
             "body_bounds": bounds,

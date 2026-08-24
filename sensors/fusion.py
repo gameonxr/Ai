@@ -32,7 +32,7 @@ def build_visual_fusion(readings: dict[str, dict[str, Any]]) -> dict[str, Any] |
         raise ValueError("visual sensor frame_id values must match")
     base_camera = cameras[0]
     for camera in cameras[1:]:
-        for key in ("projection", "coordinate_frame"):
+        for key in ("projection", "coordinate_frame", "target"):
             if camera.get(key) != base_camera.get(key):
                 raise ValueError(f"visual sensor camera metadata must match for {key}")
         if camera.get("resolution") is not None and base_camera.get("resolution") is not None and camera.get("resolution") != base_camera.get("resolution"):

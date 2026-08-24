@@ -28,5 +28,15 @@ class Sensor(ABC):
             raise ValueError("physics_state time must be a finite number")
         return float(value)
 
+    def camera_target(self) -> tuple[float, float] | None:
+        value = self.config.get("target")
+        if value is None:
+            return None
+        if not isinstance(value, (list, tuple)) or len(value) != 2:
+            raise ValueError("camera target must be a pair of finite numbers")
+        if any(isinstance(item, bool) or not isinstance(item, (int, float)) or not math.isfinite(float(item)) for item in value):
+            raise ValueError("camera target must be a pair of finite numbers")
+        return float(value[0]), float(value[1])
+
     def reset(self) -> None:
         return None
