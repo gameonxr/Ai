@@ -28,6 +28,17 @@ def test_checkpoint_round_trip_and_resume(tmp_path: Path):
     simulator.shutdown()
 
 
+def test_checkpoint_loader_reports_invalid_json_and_missing_file(tmp_path: Path):
+    invalid = tmp_path / "invalid-json.json"
+    invalid.write_text("{broken", encoding="utf-8")
+    with pytest.raises(ValueError, match="Invalid checkpoint JSON in .+invalid-json.json: Expecting"):
+        CheckpointManager.load(invalid)
+
+    missing = tmp_path / "missing.json"
+    with pytest.raises(ValueError, match="Unable to read checkpoint .+missing.json:"):
+        CheckpointManager.load(missing)
+
+
 def test_checkpoint_version_is_validated(tmp_path: Path):
     path = tmp_path / "bad.json"
     path.write_text('{"version": 999}', encoding="utf-8")

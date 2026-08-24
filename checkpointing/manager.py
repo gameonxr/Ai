@@ -37,7 +37,13 @@ class CheckpointManager:
 
     @classmethod
     def load(cls, path: str | Path) -> Checkpoint:
-        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        checkpoint_path = Path(path)
+        try:
+            payload = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+        except OSError as error:
+            raise ValueError(f"Unable to read checkpoint {checkpoint_path}: {error}") from error
+        except json.JSONDecodeError as error:
+            raise ValueError(f"Invalid checkpoint JSON in {checkpoint_path}: {error.msg}") from error
         if not isinstance(payload, dict):
             raise ValueError("Checkpoint payload must be a JSON object")
         artifact_type = payload.get("artifact_type", "checkpoint")
