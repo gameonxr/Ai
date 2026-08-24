@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 import json
+import math
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -59,10 +60,22 @@ class EpisodeRecorder:
                     missing_fields = [field for field in required_fields if field not in record]
                     if missing_fields:
                         raise ValueError(f"Episode recording transition missing required fields: {', '.join(missing_fields)}")
+                    if not isinstance(record["observation"], dict):
+                        raise ValueError(f"Episode recording transition observation at line {line_number} must be a JSON object")
+                    if not isinstance(record["action"], dict):
+                        raise ValueError(f"Episode recording transition action at line {line_number} must be a JSON object")
+                    try:
+                        reward = float(record["reward"])
+                    except (TypeError, ValueError) as error:
+                        raise ValueError(f"Episode recording transition reward at line {line_number} must be numeric") from error
+                    if not math.isfinite(reward):
+                        raise ValueError(f"Episode recording transition reward at line {line_number} must be finite")
+                    if not isinstance(record["done"], bool):
+                        raise ValueError(f"Episode recording transition done at line {line_number} must be a boolean")
                     info = record.get("info", {})
                     if not isinstance(info, dict):
-                        raise ValueError("Episode recording transition info must be a JSON object")
-                    recorder.transitions.append(RecordedTransition(record["observation"], record["action"], float(record["reward"]), bool(record["done"]), info))
+                        raise ValueError(f"Episode recording transition info at line {line_number} must be a JSON object")
+                    recorder.transitions.append(RecordedTransition(record["observation"], record["action"], reward, record["done"], info))
         return recorder
 
     def __len__(self) -> int:

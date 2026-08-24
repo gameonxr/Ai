@@ -31,6 +31,28 @@ def test_recording_round_trip(tmp_path: Path):
     assert loaded.transitions[0].reward == 1.5
 
 
+def test_recording_loader_rejects_malformed_transition_fields(tmp_path: Path):
+    prefix = '{"type":"metadata","metadata":{}}\n'
+    cases = [
+        ('{"type":"transition"}\n', "missing required fields"),
+        ('{"type":"transition","observation":[],"action":{},"reward":1,"done":false}\n', "observation at line 2 must be a JSON object"),
+        ('{"type":"transition","observation":{},"action":[],"reward":1,"done":false}\n', "action at line 2 must be a JSON object"),
+        ('{"type":"transition","observation":{},"action":{},"reward":"bad","done":false}\n', "reward at line 2 must be numeric"),
+        ('{"type":"transition","observation":{},"action":{},"reward":1,"done":0}\n', "done at line 2 must be a boolean"),
+        ('{"type":"transition","observation":{},"action":{},"reward":1,"done":false,"info":[]}\n', "info at line 2 must be a JSON object"),
+    ]
+    for index, (transition, message) in enumerate(cases):
+        path = tmp_path / f"bad-transition-{index}.jsonl"
+        path.write_text(prefix + transition, encoding="utf-8")
+        with pytest.raises(ValueError, match=message):
+            EpisodeRecorder.load_jsonl(path)
+
+    non_finite = tmp_path / "non-finite-reward.jsonl"
+    non_finite.write_text(prefix + '{"type":"transition","observation":{},"action":{},"reward":NaN,"done":false}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="reward at line 2 must be finite"):
+        EpisodeRecorder.load_jsonl(non_finite)
+
+
 def test_recording_invalid_json_is_contextual(tmp_path: Path):
     path = tmp_path / "invalid.jsonl"
     path.write_text("{invalid}\n", encoding="utf-8")
