@@ -43,9 +43,22 @@ class TrajectoryDatasetWriter:
     def append(self, observation, action, reward: float = 0.0, terminated: bool = False, info: dict[str, Any] | None = None) -> None:
         if self._handle is None:
             raise RuntimeError("TrajectoryDatasetWriter must be used as a context manager")
+        observation_payload = observation.to_dict() if hasattr(observation, "to_dict") else observation
+        if not isinstance(observation_payload, dict):
+            raise ValueError("observation must be a JSON object")
+        action_payload = action.to_dict() if hasattr(action, "to_dict") else action
+        if not isinstance(action_payload, dict):
+            raise ValueError("action must be a JSON object")
+        if isinstance(reward, bool) or not isinstance(reward, (int, float)):
+            raise ValueError("reward must be numeric")
+        reward = float(reward)
+        if not math.isfinite(reward):
+            raise ValueError("reward must be finite")
+        if not isinstance(terminated, bool):
+            raise ValueError("terminated must be a boolean")
         if info is not None and not isinstance(info, dict):
             raise ValueError("info must be a mapping when provided")
-        self._write({"type": "transition", "observation": observation.to_dict() if hasattr(observation, "to_dict") else observation, "action": action.to_dict() if hasattr(action, "to_dict") else action, "reward": float(reward), "terminated": bool(terminated), "info": info or {}})
+        self._write({"type": "transition", "observation": observation_payload, "action": action_payload, "reward": reward, "terminated": terminated, "info": info or {}})
 
     def _write(self, payload: dict[str, Any]) -> None:
         self._handle.write(json.dumps(payload, sort_keys=True) + "\n")

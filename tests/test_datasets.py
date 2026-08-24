@@ -29,11 +29,30 @@ def test_trajectory_dataset_round_trip(tmp_path: Path):
     simulator.shutdown()
 
 
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("observation", [], "observation must be a JSON object"),
+        ("action", [], "action must be a JSON object"),
+        ("reward", True, "reward must be numeric"),
+        ("reward", float("nan"), "reward must be finite"),
+        ("terminated", 1, "terminated must be a boolean"),
+    ],
+)
+def test_trajectory_writer_rejects_invalid_transition_values(tmp_path: Path, field, value, message):
+    path = tmp_path / "invalid-transition.jsonl"
+    kwargs = {"observation": {}, "action": {}, "reward": 0.0, "terminated": False}
+    kwargs[field] = value
+    with TrajectoryDatasetWriter(path) as writer:
+        with pytest.raises(ValueError, match=message):
+            writer.append(**kwargs)
+
+
 def test_trajectory_writer_rejects_non_mapping_info(tmp_path: Path):
     path = tmp_path / "trajectory.jsonl"
     with TrajectoryDatasetWriter(path) as writer:
         with pytest.raises(ValueError, match="info must be a mapping"):
-            writer.append(None, None, info=["not", "a", "mapping"])
+            writer.append({}, {}, info=["not", "a", "mapping"])
 
 
 def test_trajectory_writer_preserves_existing_file_on_failure(tmp_path: Path):
