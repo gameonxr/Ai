@@ -104,13 +104,15 @@ Live robot I/O is deliberately disabled by default and requires a future, explic
 
 ## Vectorized environments
 
-`vector_env/` provides a batched reset/step interface over independent simulator instances. The current implementation advances environments sequentially in a deterministic order, while keeping the API ready for a future parallel execution backend:
+`vector_env/` provides a batched reset/step interface over independent simulator instances. By default it advances environments sequentially in deterministic order; pass `parallel=True` to use an opt-in thread pool while preserving input ordering and independent simulator state:
 
 ```bash
 python examples/vector_env_example.py
 ```
 
-Each environment has isolated state and receives one validated `Action` per batch position. `config/vector_env_config.yaml` contains the default batch size and seed.
+Each environment has isolated state and receives one validated `Action` per batch position. `config/vector_env_config.yaml` contains the default batch size and seed. The vector manager validates the complete action batch before mutating any pending actions, so malformed batches fail atomically.
+
+`Simulator.get_state()` exposes a stable `world` definition alongside physics state and metrics. This includes normalized environment settings and static objects such as the configured floor, while keeping body and physics internals out of the brain-facing `Observation` contract.
 
 ## Sensor and actuator reliability
 
