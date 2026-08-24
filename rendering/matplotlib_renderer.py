@@ -13,6 +13,8 @@ class MatplotlibRenderer(Renderer):
     """Headless 2D humanoid renderer for debugging and examples."""
 
     def __init__(self, config: dict | None = None):
+        if config is not None and not isinstance(config, dict):
+            raise ValueError("Renderer config must be a mapping when provided")
         self.config = config or {}
         self.width = self._positive_int(self.config.get("width", 640), "width")
         self.height = self._positive_int(self.config.get("height", 640), "height")

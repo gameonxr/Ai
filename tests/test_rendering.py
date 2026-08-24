@@ -21,6 +21,12 @@ def test_renderer_auto_scales_to_body_points():
     engine.shutdown()
 
 
+@pytest.mark.parametrize("config", [[], "invalid"])
+def test_renderer_rejects_non_mapping_config(config):
+    with pytest.raises(ValueError, match="Renderer config must be a mapping"):
+        MatplotlibRenderer(config)
+
+
 def test_renderer_grid_is_optional():
     body = BodyLoader.load("config/body_humanoid.yaml")
     engine = MuJoCoBackend({})
