@@ -11,6 +11,24 @@ def test_canonical_simulator_config_is_valid():
     assert report.valid, report.errors
 
 
+def test_validator_rejects_coerced_body_numeric_values(tmp_path: Path):
+    body = yaml.safe_load(Path("config/body_humanoid.yaml").read_text(encoding="utf-8"))
+    body["joints"]["neck"]["axis"][0] = "0.0"
+    body["joints"]["neck"]["max_torque"] = True
+    body_path = tmp_path / "body.yaml"
+    body_path.write_text(yaml.safe_dump(body), encoding="utf-8")
+    config = tmp_path / "config.yaml"
+    config.write_text(
+        "simulator: {}\nphysics: {}\nbody: {config_path: body.yaml}\nsensors: {}\nactuators: {}\n",
+        encoding="utf-8",
+    )
+    report = ConfigurationValidator().validate(config)
+    assert not report.valid
+    assert "body.joints.neck.axis must contain three finite numbers" in report.errors
+    assert "body.joints.neck.max_torque must be positive" in report.errors
+
+
+
 @pytest.mark.parametrize("value", [True, "0.01"])
 def test_validator_rejects_coerced_timestep_values(tmp_path: Path, value):
     path = tmp_path / "coerced-timestep.yaml"

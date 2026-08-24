@@ -9,10 +9,7 @@ import yaml
 
 
 def _is_finite_number(value: Any) -> bool:
-    try:
-        return math.isfinite(float(value))
-    except (TypeError, ValueError):
-        return False
+    return not isinstance(value, bool) and isinstance(value, (int, float)) and math.isfinite(float(value))
 
 
 def _is_strict_finite_number(value: Any) -> bool:
