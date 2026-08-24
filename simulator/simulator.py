@@ -159,7 +159,9 @@ class Simulator:
         self._ensure_active()
         if self.renderer is None:
             raise RuntimeError("Rendering is disabled; set rendering.enabled to true")
-        return self.renderer.render(self.body, self.physics.get_body_state(), output_path)
+        render_state = self.physics.get_body_state()
+        render_state["world"] = self.world.definition()
+        return self.renderer.render(self.body, render_state, output_path)
 
     def shutdown(self) -> None:
         if self._shutdown:

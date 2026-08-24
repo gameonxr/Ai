@@ -38,17 +38,24 @@ class MatplotlibRenderer(Renderer):
         import matplotlib.pyplot as plt
 
         points = project_body(body, state)
+        floor_span = self._floor_span(state)
         figure, axis = plt.subplots(figsize=(self.width / self.dpi, self.height / self.dpi), dpi=self.dpi)
         axis.set_aspect("equal", adjustable="box")
         if self.auto_scale and points:
             x_values = [point[0] for point in points.values()]
             y_values = [point[1] for point in points.values()]
+            if self.show_ground and floor_span is not None:
+                x_values.extend(floor_span)
+                y_values.append(self.ground_y)
             self._set_auto_limits(axis, x_values, y_values)
         else:
             axis.set_xlim(-1.4, 1.4)
             axis.set_ylim(-0.8, 2.0)
         if self.show_ground:
-            axis.axhline(self.ground_y, color="#94a3b8", linewidth=1.2, linestyle="--", label="ground", zorder=0)
+            if floor_span is None:
+                axis.axhline(self.ground_y, color="#94a3b8", linewidth=1.2, linestyle="--", label="ground", zorder=0)
+            elif floor_span:
+                axis.plot(floor_span, [self.ground_y, self.ground_y], color="#94a3b8", linewidth=1.2, linestyle="--", label="ground", zorder=0)
         if self.show_grid:
             axis.grid(True, color="#cbd5e1", linewidth=0.7, alpha=0.6)
             axis.set_axisbelow(True)
@@ -72,6 +79,23 @@ class MatplotlibRenderer(Renderer):
             figure.savefig(output, format=output.suffix.lstrip(".") or "png")
         self.last_figure = figure
         return figure
+
+    @staticmethod
+    def _floor_span(state: dict[str, Any]) -> tuple[float, float] | None:
+        """Return the configured floor x-span, or suppress it when disabled."""
+        world = state.get("world")
+        if not isinstance(world, dict):
+            return None
+        if world.get("floor_enabled") is not True:
+            return ()
+        for object_definition in world.get("objects", []):
+            if not isinstance(object_definition, dict) or object_definition.get("type") != "floor":
+                continue
+            size = object_definition.get("size")
+            if isinstance(size, (list, tuple)) and len(size) == 2:
+                half_width = float(size[0]) / 2.0
+                return (-half_width, half_width)
+        return ()
 
     @staticmethod
     def _boolean(value: Any, name: str) -> bool:

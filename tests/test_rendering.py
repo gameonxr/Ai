@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from body import BodyLoader
+from environment import World
 from physics import MuJoCoBackend
 from rendering import MatplotlibRenderer
 from rendering.kinematics import project_body
@@ -38,6 +39,27 @@ def test_project_body_rejects_malformed_state():
         project_body(body, {"joint_positions": {"neck": "not-a-number"}})
     with pytest.raises(ValueError, match="joint position must be finite"):
         project_body(body, {"joint_positions": {"neck": float("nan")}})
+
+
+def test_renderer_honors_world_floor_extent_and_visibility():
+    body = BodyLoader.load("config/body_humanoid.yaml")
+    engine = MuJoCoBackend({})
+    engine.load_body(body)
+    state = engine.get_body_state()
+
+    renderer = MatplotlibRenderer()
+    state["world"] = World([0, 0, -9.81], floor_size=[4, 6]).definition()
+    figure = renderer.render(body, state)
+    ground_lines = [line for line in figure.axes[0].lines if line.get_label() == "ground"]
+    assert len(ground_lines) == 1
+    assert list(ground_lines[0].get_xdata()) == [-2.0, 2.0]
+    renderer.close()
+
+    state["world"] = World([0, 0, -9.81], floor_enabled=False).definition()
+    hidden_figure = renderer.render(body, state)
+    assert not any(line.get_label() == "ground" for line in hidden_figure.axes[0].lines)
+    renderer.close()
+    engine.shutdown()
 
 
 def test_renderer_grid_is_optional():
