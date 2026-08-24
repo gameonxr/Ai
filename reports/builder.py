@@ -90,6 +90,13 @@ class ReportBuilder:
                     _finite_float(payload.get("wall_seconds", 0.0))
                     _finite_float(payload.get("realtime_factor", 0.0))
                     _nonnegative_int(payload.get("steps", 0))
+                elif artifact_type == "health":
+                    if "healthy" in payload and not isinstance(payload["healthy"], bool):
+                        raise ValueError("health healthy flag must be boolean")
+                    if "config" in payload and not isinstance(payload["config"], dict):
+                        raise ValueError("health config must be an object")
+                    if "dependencies" in payload and not isinstance(payload["dependencies"], dict):
+                        raise ValueError("health dependencies must be an object")
                 elif artifact_type not in {"evaluation", "benchmark", "health", "sweep", "checkpoint", "report"} and "status" in payload:
                     metrics = payload.get("metrics", [])
                     if not isinstance(metrics, list):
