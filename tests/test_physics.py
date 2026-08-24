@@ -31,6 +31,13 @@ def test_toy_backend_rejects_malformed_checkpoint_state():
         engine.restore_checkpoint_state(state)
 
 
+def test_mujoco_xml_uses_configured_gravity():
+    body = BodyLoader.load("config/body_humanoid.yaml")
+    backend = MuJoCoBackend({"gravity": [1.0, 2.0, -3.5]})
+    xml = backend._build_xml(body, backend.gravity)
+    assert '<option gravity="1.0 2.0 -3.5"/>' in xml
+
+
 def test_backend_is_deterministic():
     body = BodyLoader.load("config/body_humanoid.yaml")
     first, second = MuJoCoBackend({}), MuJoCoBackend({})

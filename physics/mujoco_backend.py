@@ -32,7 +32,7 @@ class MuJoCoBackend(ToyPhysicsEngine):
         if self.native is None:
             return
         try:
-            self.model = self.native.MjModel.from_xml_string(self._build_xml(body_definition))
+            self.model = self.native.MjModel.from_xml_string(self._build_xml(body_definition, self.gravity))
             self.data = self.native.MjData(self.model)
         except Exception:
             # A malformed optional native model must not break the stable Phase 1 API.
@@ -57,7 +57,8 @@ class MuJoCoBackend(ToyPhysicsEngine):
         super().shutdown()
 
     @staticmethod
-    def _build_xml(body) -> str:
+    def _build_xml(body, gravity=(0.0, 0.0, -9.81)) -> str:
+        gravity_text = " ".join(str(float(value)) for value in gravity)
         geoms = []
         for name, link in body.links.items():
             props = link.properties
@@ -69,4 +70,4 @@ class MuJoCoBackend(ToyPhysicsEngine):
             else:
                 geom_type = "box"; dims = props.get("dimensions", [0.1, 0.1, 0.1]); size = " ".join(str(float(x) / 2.0) for x in dims)
             geoms.append(f'<body name="{escape(name)}"><geom type="{geom_type}" size="{size}" mass="{link.mass}"/></body>')
-        return '<mujoco model="ai_body"><option gravity="0 0 -9.81"/><worldbody>' + "".join(geoms) + "</worldbody></mujoco>"
+        return f'<mujoco model="ai_body"><option gravity="{gravity_text}"/><worldbody>' + "".join(geoms) + "</worldbody></mujoco>"
