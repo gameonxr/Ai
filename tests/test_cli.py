@@ -10,6 +10,26 @@ def test_cli_validate(capsys):
     assert payload["valid"] is True
 
 
+def test_cli_validate_reports_config_errors(capsys, tmp_path: Path, monkeypatch):
+    invalid = tmp_path / "invalid.yaml"
+    invalid.write_text("[broken", encoding="utf-8")
+    assert main(["validate", str(invalid)]) == 1
+    captured = capsys.readouterr()
+    assert json.loads(captured.out)["valid"] is False
+    assert captured.err == ""
+
+    missing = tmp_path / "missing.yaml"
+    assert main(["validate", str(missing)]) == 1
+    assert json.loads(capsys.readouterr().out)["valid"] is False
+
+    def fail_validation(_self, _path):
+        raise ValueError("synthetic validation failure")
+
+    monkeypatch.setattr("cli.ConfigurationValidator.validate", fail_validation)
+    assert main(["validate", str(missing)]) == 1
+    assert "Configuration validation failed: synthetic validation failure" in capsys.readouterr().err
+
+
 def test_cli_benchmark(capsys):
     assert main(["benchmark", "--steps", "2"]) == 0
     payload = json.loads(capsys.readouterr().out)

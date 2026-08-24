@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from importlib.resources import files
 from pathlib import Path
 
@@ -75,7 +76,11 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command == "validate":
-        report = ConfigurationValidator().validate(args.path)
+        try:
+            report = ConfigurationValidator().validate(args.path)
+        except (OSError, ValueError) as error:
+            print(f"Configuration validation failed: {error}", file=sys.stderr)
+            return 1
         print(json.dumps(report.to_dict(), indent=2, sort_keys=True))
         return 0 if report.valid else 1
     if args.command == "benchmark":
