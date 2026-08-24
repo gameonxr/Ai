@@ -31,7 +31,10 @@ class Simulator:
         engine_name = physics_cfg.get("engine", "mujoco")
         self.physics = create_physics_engine(engine_name, physics_cfg)
         self.physics.load_body(self.body)
-        self.world = World(list(physics_cfg.get("gravity", [0, 0, -9.81])), bool(self.config.get("environment", {}).get("floor_enabled", True)), float(self.config.get("environment", {}).get("floor_friction", 0.5)), tuple(self.config.get("environment", {}).get("floor_size", [10, 10])))
+        environment_cfg = self.config.get("environment", {})
+        if not isinstance(environment_cfg, dict):
+            raise ValueError("environment config must be a mapping")
+        self.world = World(physics_cfg.get("gravity", [0, 0, -9.81]), environment_cfg.get("floor_enabled", True), environment_cfg.get("floor_friction", 0.5), environment_cfg.get("floor_size", [10, 10]))
         sensor_cfg = self.config["sensors"].get("loaded", {}).get("sensors", self.config["sensors"])
         actuator_cfg = self.config["actuators"].get("loaded", {}).get("actuators", self.config["actuators"])
         self.sensors = build_sensors(sensor_cfg)

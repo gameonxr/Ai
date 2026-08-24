@@ -4,6 +4,31 @@ from brain import DummyBrain
 from simulator import Simulator
 
 
+def test_simulator_rejects_non_mapping_environment_config(monkeypatch):
+    from simulator.config_loader import ConfigLoader
+
+    monkeypatch.setattr(ConfigLoader, "load", lambda self: {
+        "simulator": {"timestep": 0.005},
+        "physics": {"engine": "toy", "gravity": [0, 0, -9.81]},
+        "body": {"config_path": "config/body_humanoid.yaml"},
+        "sensors": {"sensors": {}},
+        "actuators": {"defaults": {}},
+        "environment": [],
+    })
+    with pytest.raises(ValueError, match="environment config must be a mapping"):
+        Simulator("config/simulator_config.yaml")
+
+
+def test_simulator_preserves_strict_environment_values(monkeypatch):
+    from simulator.config_loader import ConfigLoader
+
+    base = ConfigLoader("config/simulator_config.yaml").load()
+    base["environment"] = {"floor_enabled": "false", "floor_friction": "0.5", "floor_size": [10, 10]}
+    monkeypatch.setattr(ConfigLoader, "load", lambda self: base)
+    with pytest.raises(ValueError, match="floor_enabled must be a boolean"):
+        Simulator("config/simulator_config.yaml")
+
+
 def test_simulator_set_brain_requires_interface_or_none():
     sim = Simulator("config/simulator_config.yaml")
     try:
