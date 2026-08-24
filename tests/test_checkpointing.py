@@ -5,7 +5,7 @@ import pytest
 
 from brain import DummyBrain
 from simulator import Simulator
-from checkpointing import CheckpointManager
+from checkpointing import Checkpoint, CheckpointManager
 
 
 def test_checkpoint_round_trip_and_resume(tmp_path: Path):
@@ -26,6 +26,18 @@ def test_checkpoint_round_trip_and_resume(tmp_path: Path):
     assert simulator.metrics.simulation_seconds == 0.02
     assert simulator.physics.get_checkpoint_state() == expected_state
     simulator.shutdown()
+
+
+def test_checkpoint_artifact_rejects_malformed_save_fields():
+    base = Checkpoint(1, "run", 0, 0, 0.0, {"physics": {}}, {}, {})
+    malformed = [
+        (Checkpoint(1, "", 0, 0, 0.0, {"physics": {}}, {}, {}), "Checkpoint run_id must be a non-empty string"),
+        (Checkpoint(1, "run", 0, 0, 0.0, {}, {}, {}), "Checkpoint physics state must be a JSON object"),
+        (Checkpoint(1, "run", 0, 0, float("nan"), {"physics": {}}, {}, {}), "Checkpoint current_time must be a finite non-negative number"),
+    ]
+    for checkpoint, message in malformed:
+        with pytest.raises(ValueError, match=message):
+            checkpoint.to_artifact_dict()
 
 
 def test_checkpoint_loader_reports_invalid_json_and_missing_file(tmp_path: Path):

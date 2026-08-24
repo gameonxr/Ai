@@ -23,6 +23,32 @@ class Checkpoint:
     artifact_type: str = "checkpoint"
     schema_version: int = 1
 
+    def to_artifact_dict(self) -> dict[str, Any]:
+        """Return a validated checkpoint payload for persistence."""
+        if isinstance(self.version, bool) or not isinstance(self.version, int) or self.version != 1:
+            raise ValueError("Checkpoint version must be 1")
+        if not isinstance(self.run_id, str) or not self.run_id.strip():
+            raise ValueError("Checkpoint run_id must be a non-empty string")
+        for field in ("episode", "step"):
+            value = getattr(self, field)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise ValueError(f"Checkpoint {field} must be a non-negative integer")
+        if isinstance(self.current_time, bool) or not isinstance(self.current_time, (int, float)) or not math.isfinite(float(self.current_time)) or self.current_time < 0:
+            raise ValueError("Checkpoint current_time must be a finite non-negative number")
+        if not isinstance(self.simulator_state, dict) or not isinstance(self.metrics, dict):
+            raise ValueError("Checkpoint simulator_state and metrics must be JSON objects")
+        if "physics" not in self.simulator_state or not isinstance(self.simulator_state["physics"], dict):
+            raise ValueError("Checkpoint physics state must be a JSON object")
+        if "actuators" in self.simulator_state and not isinstance(self.simulator_state["actuators"], dict):
+            raise ValueError("Checkpoint actuators must be a JSON object")
+        if not isinstance(self.metadata, dict):
+            raise ValueError("Checkpoint metadata must be a JSON object")
+        if self.artifact_type != "checkpoint":
+            raise ValueError("Checkpoint artifact_type must be checkpoint")
+        if isinstance(self.schema_version, bool) or not isinstance(self.schema_version, int) or self.schema_version != 1:
+            raise ValueError("Checkpoint schema_version must be 1")
+        return asdict(self)
+
 
 class CheckpointManager:
     CURRENT_VERSION = 1
@@ -33,7 +59,7 @@ class CheckpointManager:
             raise ValueError("Checkpoint metadata must be a JSON object")
         state = {"physics": simulator.physics.get_checkpoint_state(), "paused": simulator.paused, "actuators": {name: actuator.current_command for name, actuator in simulator.actuators.items()}}
         checkpoint = Checkpoint(cls.CURRENT_VERSION, run_id, simulator.metrics.episodes, simulator.step_count, simulator.current_time, state, simulator.metrics.snapshot(), metadata or {})
-        write_json_atomic(asdict(checkpoint), path)
+        write_json_atomic(checkpoint.to_artifact_dict(), path)
         return checkpoint
 
     @classmethod
