@@ -14,6 +14,14 @@ def test_toy_backend_validates_initial_gravity():
             ToyPhysicsEngine({"gravity": gravity})  # type: ignore[arg-type]
 
 
+def test_toy_backend_rejects_malformed_motor_commands():
+    engine = ToyPhysicsEngine({})
+    engine.load_body(BodyLoader.load("config/body_humanoid.yaml"))
+    for command, message in (({"target": "bad"}, "motor command target must be a finite number"), ({"target": math.nan}, "motor command target must be a finite number"), ({"target": 1.0, "mode": "velocity"}, "motor command mode must be torque or position")):
+        with pytest.raises(ValueError, match=message):
+            engine.apply_action(Action(motor_commands={"neck": command}))
+
+
 def test_toy_backend_rejects_invalid_reset_seed():
     body = BodyLoader.load("config/body_humanoid.yaml")
     engine = ToyPhysicsEngine({})

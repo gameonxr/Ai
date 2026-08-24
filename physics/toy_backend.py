@@ -1,4 +1,5 @@
 from copy import deepcopy
+import math
 import numpy as np
 from .physics_engine import PhysicsEngine
 
@@ -47,10 +48,24 @@ class ToyPhysicsEngine(PhysicsEngine):
     def apply_action(self, action) -> None:
         for joint, command in (action.joint_targets or {}).items():
             if joint in self.positions:
-                self.commands[joint] = {"target": float(command), "mode": "position"}
+                self.commands[joint] = self._normalize_command(command, "position")
         for joint, command in (action.motor_commands or {}).items():
             if joint in self.positions:
-                self.commands[joint] = command if isinstance(command, dict) else {"target": float(command), "mode": "torque"}
+                self.commands[joint] = self._normalize_command(command, "torque")
+
+    @staticmethod
+    def _normalize_command(command, default_mode: str) -> dict:
+        if isinstance(command, dict):
+            target = command.get("target", 0.0)
+            mode = command.get("mode", default_mode)
+        else:
+            target = command
+            mode = default_mode
+        if isinstance(target, bool) or not isinstance(target, (int, float, np.integer, np.floating)) or not math.isfinite(float(target)):
+            raise ValueError("motor command target must be a finite number")
+        if mode not in {"torque", "position"}:
+            raise ValueError("motor command mode must be torque or position")
+        return {"target": float(target), "mode": mode}
 
     def step(self, dt=0.005) -> None:
         if isinstance(dt, bool) or not isinstance(dt, (int, float, np.integer, np.floating)):
