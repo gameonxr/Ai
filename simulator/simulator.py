@@ -43,7 +43,12 @@ class Simulator:
         self.validator = ActionValidator(self.actuators, self.config["simulator"])
         self.observation_builder = ObservationBuilder(self.sensors)
         rendering_cfg = self.config.get("rendering", {})
-        self.renderer = create_renderer(rendering_cfg.get("renderer", "matplotlib"), rendering_cfg) if rendering_cfg.get("enabled", False) else None
+        if not isinstance(rendering_cfg, dict):
+            raise ValueError("rendering config must be a mapping")
+        rendering_enabled = rendering_cfg.get("enabled", False)
+        if not isinstance(rendering_enabled, bool):
+            raise ValueError("rendering.enabled must be a boolean")
+        self.renderer = create_renderer(rendering_cfg.get("renderer", "matplotlib"), rendering_cfg) if rendering_enabled else None
         self.brain: BrainInterface | None = None
         self.current_time = 0.0
         self.step_count = 0

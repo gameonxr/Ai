@@ -29,6 +29,18 @@ def test_simulator_preserves_strict_environment_values(monkeypatch):
         Simulator("config/simulator_config.yaml")
 
 
+@pytest.mark.parametrize("rendering", [[], {"enabled": "false"}])
+def test_simulator_rejects_invalid_rendering_configuration(monkeypatch, rendering):
+    from simulator.config_loader import ConfigLoader
+
+    base = ConfigLoader("config/simulator_config.yaml").load()
+    base["rendering"] = rendering
+    monkeypatch.setattr(ConfigLoader, "load", lambda self: base)
+    message = "rendering config must be a mapping" if not isinstance(rendering, dict) else "rendering.enabled must be a boolean"
+    with pytest.raises(ValueError, match=message):
+        Simulator("config/simulator_config.yaml")
+
+
 def test_floor_configuration_controls_contact_observations(monkeypatch):
     from simulator.config_loader import ConfigLoader
 
