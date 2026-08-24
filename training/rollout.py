@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -26,9 +27,17 @@ class Rollout:
         self.transitions: list[Transition] = []
 
     def append(self, observation: Observation, action: Action, reward: float, done: bool = False, info: dict | None = None) -> None:
+        if not isinstance(observation, Observation):
+            raise TypeError("observation must be an Observation")
+        if not isinstance(action, Action):
+            raise TypeError("action must be an Action")
         if info is not None and not isinstance(info, dict):
             raise ValueError("info must be a mapping when provided")
-        self.transitions.append(Transition(observation.to_dict(), action.to_dict(), float(reward), bool(done), info or {}))
+        if isinstance(reward, bool) or not isinstance(reward, (int, float)) or not math.isfinite(float(reward)):
+            raise ValueError("reward must be a finite number")
+        if not isinstance(done, bool):
+            raise ValueError("done must be a boolean")
+        self.transitions.append(Transition(observation.to_dict(), action.to_dict(), float(reward), done, info or {}))
 
     @property
     def total_reward(self) -> float:

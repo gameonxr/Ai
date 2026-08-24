@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from core import Action, Observation
 from simulator import Simulator
 from training import RandomTorquePolicy, Rollout, Trainer
 from training.rollout import Transition
@@ -34,10 +35,25 @@ def test_rollout_jsonl_persistence(tmp_path: Path):
     trainer.close()
 
 
+def test_rollout_append_rejects_invalid_transition_inputs():
+    rollout = Rollout()
+    observation = Observation(0.0)
+    action = Action.noop()
+    cases = [
+        ((None, action, 0.0, False), "observation must be an Observation"),
+        ((observation, None, 0.0, False), "action must be an Action"),
+        ((observation, action, float("nan"), False), "reward must be a finite number"),
+        ((observation, action, 0.0, 1), "done must be a boolean"),
+    ]
+    for args, message in cases:
+        with pytest.raises((TypeError, ValueError), match=message):
+            rollout.append(*args)
+
+
 def test_rollout_append_rejects_non_mapping_info():
     rollout = Rollout()
     with pytest.raises(ValueError, match="info must be a mapping"):
-        rollout.append(None, None, 0.0, info=["not", "a", "mapping"])
+        rollout.append(Observation(0.0), Action.noop(), 0.0, info=["not", "a", "mapping"])
 
 
 def test_rollout_save_preserves_existing_file_on_serialization_failure(tmp_path: Path):
