@@ -5,6 +5,16 @@ from simulator import Simulator
 from training import RandomTorquePolicy
 
 
+def test_evaluation_summary_artifact_rejects_malformed_summary():
+    malformed = EvaluationSummary(1, 1, float("nan"), 0.0, 1.0, 1.0, 1.0, [])
+    with pytest.raises(ValueError, match="mean_reward must be a finite number"):
+        malformed.to_artifact_dict("config.yaml", 42, 1.0)
+
+    malformed = EvaluationSummary(1, 1, 1.0, 0.0, 1.0, 1.0, 1.0, [{"episode": 0, "steps": 1, "total_reward": 1.0, "terminated": "no"}])
+    with pytest.raises(ValueError, match="episode metric terminated must be boolean"):
+        malformed.to_artifact_dict("config.yaml", 42, 1.0)
+
+
 def test_evaluation_artifact_provenance_rejects_invalid_inputs():
     summary = EvaluationSummary(1, 1, 1.0, 0.0, 1.0, 1.0, 1.0, [])
     with pytest.raises(ValueError, match="config_path must be a non-empty string"):

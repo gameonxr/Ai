@@ -31,6 +31,26 @@ class EvaluationSummary:
             raise ValueError("seed must be an integer or null")
         if isinstance(reward_per_step, bool) or not isinstance(reward_per_step, (int, float)) or not math.isfinite(float(reward_per_step)):
             raise ValueError("reward_per_step must be a finite number")
+        for field in ("episodes", "total_steps"):
+            value = getattr(self, field)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise ValueError(f"{field} must be a non-negative integer")
+        for field in ("mean_reward", "reward_std", "min_reward", "max_reward", "mean_steps"):
+            value = getattr(self, field)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+                raise ValueError(f"{field} must be a finite number")
+        if not isinstance(self.episode_metrics, list) or any(not isinstance(item, dict) for item in self.episode_metrics):
+            raise ValueError("episode_metrics must be a list of objects")
+        for item in self.episode_metrics:
+            for field in ("episode", "steps"):
+                value = item.get(field, 0)
+                if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                    raise ValueError(f"episode metric {field} must be a non-negative integer")
+            reward = item.get("total_reward", 0.0)
+            if isinstance(reward, bool) or not isinstance(reward, (int, float)) or not math.isfinite(float(reward)):
+                raise ValueError("episode metric total_reward must be a finite number")
+            if "terminated" in item and not isinstance(item["terminated"], bool):
+                raise ValueError("episode metric terminated must be boolean")
         return {
             "artifact_type": "evaluation",
             "schema_version": 1,
