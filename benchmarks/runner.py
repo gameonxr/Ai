@@ -21,6 +21,10 @@ class BenchmarkResult:
 
     def to_artifact_dict(self, config_path: str, seed: int | None) -> dict[str, Any]:
         """Return a persisted benchmark payload with run provenance."""
+        if not isinstance(config_path, str) or not config_path.strip():
+            raise ValueError("config_path must be a non-empty string")
+        if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
+            raise ValueError("seed must be an integer or null")
         return {
             "artifact_type": "benchmark",
             "schema_version": 1,
