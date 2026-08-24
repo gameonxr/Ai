@@ -20,8 +20,12 @@ class MatplotlibRenderer(Renderer):
         self.show_axes = bool(self.config.get("show_axes", True))
         self.auto_scale = bool(self.config.get("auto_scale", True))
         self.padding = float(self.config.get("padding", 0.15))
+        self.show_ground = bool(self.config.get("show_ground", True))
+        self.ground_y = float(self.config.get("ground_y", 0.0))
         if not math.isfinite(self.padding) or self.padding < 0:
             raise ValueError("Renderer padding must be finite and non-negative")
+        if not math.isfinite(self.ground_y):
+            raise ValueError("Renderer ground_y must be finite")
         self.last_figure = None
 
     def render(self, body, state: dict[str, Any], output_path: str | Path | None = None):
@@ -39,6 +43,8 @@ class MatplotlibRenderer(Renderer):
         else:
             axis.set_xlim(-1.4, 1.4)
             axis.set_ylim(-0.8, 2.0)
+        if self.show_ground:
+            axis.axhline(self.ground_y, color="#94a3b8", linewidth=1.2, linestyle="--", label="ground", zorder=0)
         axis.set_title("AI Body Simulator")
         if not self.show_axes:
             axis.axis("off")

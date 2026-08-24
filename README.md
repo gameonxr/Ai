@@ -19,7 +19,7 @@ python examples/dummy_brain_example.py
 python examples/render_simulation.py
 ```
 
-The default configuration is `config/simulator_config.yaml`. It uses the MuJoCo backend boundary with a portable deterministic implementation for headless execution; the public backend interface is isolated so a native engine implementation can be introduced without changing the simulator or brain APIs. Rendering is disabled by default and can be enabled in YAML with `rendering.enabled: true`. The headless Matplotlib renderer auto-fits its viewport around the current body pose by default; use `auto_scale: false` for the legacy fixed viewport or set a non-negative `padding` value to control the surrounding margin.
+The default configuration is `config/simulator_config.yaml`. It uses the MuJoCo backend boundary with a portable deterministic implementation for headless execution; the public backend interface is isolated so a native engine implementation can be introduced without changing the simulator or brain APIs. Rendering is disabled by default and can be enabled in YAML with `rendering.enabled: true`. The headless Matplotlib renderer auto-fits its viewport around the current body pose by default and draws a dashed ground reference at `ground_y: 0.0`; use `auto_scale: false` for the legacy fixed viewport, set a non-negative `padding` value to control the surrounding margin, or set `show_ground: false` to hide the reference.
 
 To render the current simulator state from Python, first set `rendering.enabled: true` in `config/simulator_config.yaml`, then call:
 
