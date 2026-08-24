@@ -79,6 +79,13 @@ def test_renderer_rejects_invalid_dimensions(dimension, value):
         MatplotlibRenderer({dimension: value})
 
 
+@pytest.mark.parametrize("option", ["show_axes", "auto_scale", "show_ground", "show_grid", "label_links"])
+@pytest.mark.parametrize("value", ["false", 0, 1, None])
+def test_renderer_rejects_non_boolean_options(option, value):
+    with pytest.raises(ValueError, match=f"Renderer {option} must be a boolean"):
+        MatplotlibRenderer({option: value})
+
+
 def test_renderer_rejects_invalid_padding_or_ground_height():
     with pytest.raises(ValueError, match="padding must be finite and non-negative"):
         MatplotlibRenderer({"padding": -0.1})

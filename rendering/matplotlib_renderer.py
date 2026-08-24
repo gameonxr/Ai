@@ -19,12 +19,13 @@ class MatplotlibRenderer(Renderer):
         self.width = self._positive_int(self.config.get("width", 640), "width")
         self.height = self._positive_int(self.config.get("height", 640), "height")
         self.dpi = self._positive_int(self.config.get("dpi", 100), "dpi")
-        self.show_axes = bool(self.config.get("show_axes", True))
-        self.auto_scale = bool(self.config.get("auto_scale", True))
+        self.show_axes = self._boolean(self.config.get("show_axes", True), "show_axes")
+        self.auto_scale = self._boolean(self.config.get("auto_scale", True), "auto_scale")
         self.padding = float(self.config.get("padding", 0.15))
-        self.show_ground = bool(self.config.get("show_ground", True))
-        self.show_grid = bool(self.config.get("show_grid", False))
+        self.show_ground = self._boolean(self.config.get("show_ground", True), "show_ground")
+        self.show_grid = self._boolean(self.config.get("show_grid", False), "show_grid")
         self.ground_y = float(self.config.get("ground_y", 0.0))
+        self.label_links = self._boolean(self.config.get("label_links", False), "label_links")
         if not math.isfinite(self.padding) or self.padding < 0:
             raise ValueError("Renderer padding must be finite and non-negative")
         if not math.isfinite(self.ground_y):
@@ -62,7 +63,7 @@ class MatplotlibRenderer(Renderer):
                 axis.plot(x_values, y_values, color="#2563eb", linewidth=4, solid_capstyle="round")
         for name, (x, y) in points.items():
             axis.scatter([x], [y], color="#0f172a", s=30, zorder=3)
-            if self.config.get("label_links", False):
+            if self.label_links:
                 axis.annotate(name, (x, y), xytext=(4, 4), textcoords="offset points", fontsize=7)
         figure.tight_layout()
         if output_path is not None:
@@ -71,6 +72,12 @@ class MatplotlibRenderer(Renderer):
             figure.savefig(output, format=output.suffix.lstrip(".") or "png")
         self.last_figure = figure
         return figure
+
+    @staticmethod
+    def _boolean(value: Any, name: str) -> bool:
+        if not isinstance(value, bool):
+            raise ValueError(f"Renderer {name} must be a boolean")
+        return value
 
     @staticmethod
     def _positive_int(value: Any, name: str) -> int:
