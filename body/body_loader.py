@@ -1,4 +1,5 @@
 from pathlib import Path
+import math
 import yaml
 from .body import Body
 from .joint import Joint
@@ -37,6 +38,29 @@ class BodyLoader:
         if not isinstance(initial, dict):
             raise ValueError(f"Body configuration {body_path} initial_state.joint_positions must be a mapping")
         try:
-            return Body(str(body_cfg.get("type", "humanoid")), float(body_cfg.get("mass", 1.0)), float(body_cfg.get("height", 1.0)), float(body_cfg.get("default_damping", 0.01)), links, joints, {k: float(v) for k, v in initial.items()})
+            initial_positions = {
+                name: BodyLoader._numeric_value(value, f"initial joint position {name}")
+                for name, value in initial.items()
+            }
+            return Body(
+                str(body_cfg.get("type", "humanoid")),
+                BodyLoader._numeric_value(body_cfg.get("mass", 1.0), "mass", positive=True),
+                BodyLoader._numeric_value(body_cfg.get("height", 1.0), "height", positive=True),
+                BodyLoader._numeric_value(body_cfg.get("default_damping", 0.01), "default_damping"),
+                links,
+                joints,
+                initial_positions,
+            )
         except (TypeError, ValueError) as error:
             raise ValueError(f"Invalid body metadata in {body_path}: {error}") from error
+
+    @staticmethod
+    def _numeric_value(value, name: str, positive: bool = False) -> float:
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+            raise ValueError(f"Body {name} must be a finite number")
+        numeric = float(value)
+        if positive and numeric <= 0:
+            raise ValueError(f"Body {name} must be positive")
+        if not positive and name == "default_damping" and numeric < 0:
+            raise ValueError("Body default_damping must be non-negative")
+        return numeric

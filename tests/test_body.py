@@ -1,7 +1,10 @@
+from pathlib import Path
+
 from body import BodyLoader
 
 
 import pytest
+import yaml
 
 
 def test_body_has_expected_dof():
@@ -24,6 +27,24 @@ def test_body_loader_reports_missing_and_invalid_files(tmp_path):
     non_mapping.write_text("[]", encoding="utf-8")
     with pytest.raises(ValueError, match="must be a mapping"):
         BodyLoader.load(non_mapping)
+
+
+@pytest.mark.parametrize(
+    ("section", "field", "value", "message"),
+    [
+        ("body", "mass", "1.0", "Body mass must be a finite number"),
+        ("body", "mass", 0, "Body mass must be positive"),
+        ("body", "default_damping", -0.1, "Body default_damping must be non-negative"),
+        ("initial_state", "joint_positions", {"neck": "0.1"}, "Body initial joint position neck must be a finite number"),
+    ],
+)
+def test_body_loader_rejects_coerced_metadata(tmp_path, section, field, value, message):
+    payload = yaml.safe_load(Path("config/body_humanoid.yaml").read_text(encoding="utf-8"))
+    payload[section][field] = value
+    path = tmp_path / "invalid-metadata.yaml"
+    path.write_text(yaml.safe_dump(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match=message):
+        BodyLoader.load(path)
 
 
 def test_body_loader_rejects_malformed_sections(tmp_path):
