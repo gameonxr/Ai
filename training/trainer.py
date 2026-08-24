@@ -40,7 +40,9 @@ class Trainer:
         for step in range(max_steps):
             observation, action = self.environment.step()
             reward = self.reward_fn(observation, action)
-            terminated = bool(self.done_fn(observation, step + 1))
+            terminated = self.done_fn(observation, step + 1)
+            if not isinstance(terminated, bool):
+                raise ValueError("done_fn must return a boolean")
             rollout.append(observation, action, reward, terminated, {"step": step + 1})
             if terminated:
                 break

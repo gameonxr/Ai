@@ -40,6 +40,22 @@ def test_trainer_rejects_invalid_episode_inputs(tmp_path: Path):
         trainer.close()
 
 
+def test_trainer_honors_done_callback_and_rejects_invalid_results():
+    simulator = Simulator("config/simulator_config.yaml")
+    trainer = Trainer(simulator, RandomTorquePolicy(["neck"], seed=1), done_fn=lambda observation, step: step == 2)
+    rollout, metrics = trainer.run_episode(max_steps=5, seed=1)
+    assert len(rollout.transitions) == 2 and metrics.terminated
+    trainer.close()
+
+    simulator = Simulator("config/simulator_config.yaml")
+    trainer = Trainer(simulator, RandomTorquePolicy(["neck"], seed=1), done_fn=lambda observation, step: 1)
+    try:
+        with pytest.raises(ValueError, match="done_fn must return a boolean"):
+            trainer.run_episode(max_steps=1, seed=1)
+    finally:
+        trainer.close()
+
+
 def test_random_torque_policy_reset_rejects_invalid_seed():
     policy = RandomTorquePolicy(["neck"], seed=1)
     for value in (True, 1.5, "7"):

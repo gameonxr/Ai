@@ -64,10 +64,11 @@ class EvaluationSummary:
 class Evaluator:
     """Evaluate one policy over seeded episodes without changing policy state."""
 
-    def __init__(self, simulator: Simulator, policy: Policy, reward_fn: Callable | None = None):
+    def __init__(self, simulator: Simulator, policy: Policy, reward_fn: Callable | None = None, done_fn: Callable[[Any, int], bool] | None = None):
         self.simulator = simulator
         self.policy = policy
         self.reward_fn = reward_fn or (lambda observation, action: 0.0)
+        self.done_fn = done_fn or (lambda observation, step: False)
 
     def run(self, episodes: int = 1, max_steps: int = 100, seed: int | None = 42) -> EvaluationSummary:
         if isinstance(episodes, bool) or not isinstance(episodes, int) or episodes < 1:
@@ -84,12 +85,21 @@ class Evaluator:
                 self.simulator.reset(None if seed is None else seed + index)
                 total_reward = 0.0
                 steps = 0
+                terminated = False
                 for _ in range(max_steps):
                     observation = self.simulator.step()
                     action = brain.last_action
-                    total_reward += float(self.reward_fn(observation, action))
+                    reward = self.reward_fn(observation, action)
+                    if isinstance(reward, bool) or not isinstance(reward, (int, float)) or not math.isfinite(float(reward)):
+                        raise ValueError("reward_fn must return a finite number")
+                    total_reward += float(reward)
                     steps += 1
-                results.append(EpisodeMetrics(episode=index, steps=steps, total_reward=total_reward, terminated=False))
+                    terminated = self.done_fn(observation, steps)
+                    if not isinstance(terminated, bool):
+                        raise ValueError("done_fn must return a boolean")
+                    if terminated:
+                        break
+                results.append(EpisodeMetrics(episode=index, steps=steps, total_reward=total_reward, terminated=terminated))
         finally:
             self.simulator.set_brain(None)
         rewards = [item.total_reward for item in results]

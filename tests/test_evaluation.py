@@ -36,6 +36,28 @@ def test_evaluator_aggregates_episode_metrics():
     simulator.shutdown()
 
 
+def test_evaluator_honors_done_callback_and_reports_termination():
+    simulator = Simulator("config/simulator_config.yaml")
+    policy = RandomTorquePolicy(["neck"], seed=7)
+    evaluator = Evaluator(simulator, policy, reward_fn=lambda observation, action: 1.0, done_fn=lambda observation, step: step == 2)
+    summary = evaluator.run(episodes=2, max_steps=5, seed=10)
+    assert summary.total_steps == 4
+    assert all(item["terminated"] is True and item["steps"] == 2 for item in summary.episode_metrics)
+    simulator.shutdown()
+
+
+def test_evaluator_rejects_invalid_callback_results():
+    simulator = Simulator("config/simulator_config.yaml")
+    policy = RandomTorquePolicy(["neck"], seed=7)
+    try:
+        with pytest.raises(ValueError, match="reward_fn must return a finite number"):
+            Evaluator(simulator, policy, reward_fn=lambda observation, action: "1.0").run(max_steps=1)
+        with pytest.raises(ValueError, match="done_fn must return a boolean"):
+            Evaluator(simulator, policy, done_fn=lambda observation, step: 1).run(max_steps=1)
+    finally:
+        simulator.shutdown()
+
+
 def test_evaluator_validates_limits():
     simulator = Simulator("config/simulator_config.yaml")
     policy = RandomTorquePolicy(list(simulator.actuators), seed=7)
