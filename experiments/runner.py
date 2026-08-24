@@ -42,6 +42,8 @@ class ExperimentRunner:
         self.run_id = run_id
         self.manifest_dir = Path(manifest_dir)
         self.policy_factory = policy_factory
+        if metadata is not None and not isinstance(metadata, dict):
+            raise ValueError("metadata must be a JSON object")
         self.metadata = dict(metadata or {})
 
     def run(self, episodes: int = 1, max_steps: int = 100, seed: int | None = None, checkpoint_every: int = 0) -> RunManifest:

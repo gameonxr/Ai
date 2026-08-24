@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from cli import main
-from experiments import SweepRunner
+from experiments import ExperimentRunner, SweepRunner
 from reports import ReportBuilder
 
 
@@ -102,9 +102,13 @@ def test_sweep_runner_rejects_invalid_sweep_id(tmp_path: Path):
         SweepRunner("", tmp_path)
 
 
-def test_experiment_manifest_has_artifact_taxonomy(tmp_path: Path):
-    from experiments import ExperimentRunner
+def test_experiment_runner_rejects_invalid_metadata(tmp_path: Path):
+    for metadata in ([], "invalid"):
+        with pytest.raises(ValueError, match="metadata must be a JSON object"):
+            ExperimentRunner("config/simulator_config.yaml", "invalid-metadata", tmp_path, metadata=metadata)
 
+
+def test_experiment_manifest_has_artifact_taxonomy(tmp_path: Path):
     ExperimentRunner("config/simulator_config.yaml", "typed", tmp_path).run(episodes=1, max_steps=1, seed=8)
     payload = json.loads((tmp_path / "typed.json").read_text(encoding="utf-8"))
     assert payload["artifact_type"] == "experiment_manifest"
