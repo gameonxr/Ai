@@ -5,6 +5,7 @@ import pytest
 
 from body import BodyLoader
 from sensors.depth import DepthSensor
+from sensors.fusion import build_visual_fusion
 from sensors.segmentation import SegmentationSensor
 from sensors.perception import PerceptionSensor
 from sensors.imu import IMUSensor
@@ -151,6 +152,27 @@ def test_perception_sensor_without_body_reports_unavailable_summary():
     assert reading["body_bounds"] is None
 
 
+def test_visual_fusion_builds_aligned_channel_summary():
+    readings = {
+        "vision": {"frame_id": 1.0, "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": (32, 24)}, "available": True, "non_background_pixels": 12},
+        "depth": {"frame_id": 1.0, "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": (32, 24)}, "available": True, "valid_pixels": 9},
+    }
+    summary = build_visual_fusion(readings)
+    assert summary["aligned"] is True
+    assert summary["frame_id"] == 1.0
+    assert summary["available_channels"] == ["vision", "depth"]
+    assert summary["channels"]["vision"]["valid_pixels"] == 12
+
+
+def test_visual_fusion_rejects_mismatched_frames():
+    readings = {
+        "vision": {"frame_id": 1.0, "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": (32, 24)}, "available": True},
+        "depth": {"frame_id": 2.0, "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": (32, 24)}, "available": True},
+    }
+    with pytest.raises(ValueError, match="frame_id values must match"):
+        build_visual_fusion(readings)
+
+
 def test_sensor_base_rejects_malformed_constructor_inputs():
     for name, config, message in (("", {}, "sensor name must be a non-empty string"), ("imu", [], "sensor config must be an object"), ("imu", {"enabled": 1}, "sensor enabled must be a boolean")):
         with pytest.raises(ValueError, match=message):
@@ -188,3 +210,4 @@ def test_only_enabled_sensors_are_exposed():
     sensors = build_sensors({"proprioception": {"enabled": True}, "vision": {"enabled": False}, "imu": {"enabled": True}})
     observation = ObservationBuilder(sensors).build({"joint_positions": {}, "joint_velocities": {}, "joint_accelerations": {}, "body_position": [0,0,1], "body_velocity": [0,0,0], "body_rotation": [0,0,0,1], "body_angular_velocity": [0,0,0], "gravity": [0,0,-9.81]}, 0.0)
     assert observation.proprioception is not None and observation.imu is not None and observation.vision is None and observation.segmentation is None and observation.perception is None
+    assert "visual_fusion" not in observation.info
