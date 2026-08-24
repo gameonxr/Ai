@@ -8,7 +8,8 @@ class ToyPhysicsEngine(PhysicsEngine):
 
     def __init__(self, config: dict | None = None):
         self.config = config or {}
-        self.gravity = np.asarray(self.config.get("gravity", [0, 0, -9.81]), dtype=float)
+        self.gravity = np.zeros(3, dtype=float)
+        self.set_gravity(self.config.get("gravity", [0, 0, -9.81]))
         self.body = None
         self.positions: dict[str, float] = {}
         self.velocities: dict[str, float] = {}

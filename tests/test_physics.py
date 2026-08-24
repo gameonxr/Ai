@@ -8,6 +8,12 @@ from physics import MuJoCoBackend
 from physics.toy_backend import ToyPhysicsEngine
 
 
+def test_toy_backend_validates_initial_gravity():
+    for gravity in ([0.0, 0.0], [0.0, 0.0, math.nan], "gravity"):
+        with pytest.raises(ValueError, match="gravity must be a finite 3-vector"):
+            ToyPhysicsEngine({"gravity": gravity})  # type: ignore[arg-type]
+
+
 def test_toy_backend_rejects_invalid_reset_seed():
     body = BodyLoader.load("config/body_humanoid.yaml")
     engine = ToyPhysicsEngine({})
