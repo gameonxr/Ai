@@ -1,5 +1,16 @@
 from sensors import ObservationBuilder
+import math
+
+import pytest
+
 from sensors.sensor_registry import build_sensors
+
+
+def test_observation_builder_rejects_invalid_inputs():
+    builder = ObservationBuilder(build_sensors({"proprioception": {"enabled": True}}))
+    for state, timestamp, message in (([], 0.0, "physics_state must be an object"), ({}, math.nan, "timestamp must be a finite number"), ({}, True, "timestamp must be a finite number")):
+        with pytest.raises(ValueError, match=message):
+            builder.build(state, timestamp)  # type: ignore[arg-type]
 
 
 def test_only_enabled_sensors_are_exposed():
