@@ -1,9 +1,23 @@
 import json
+
+import pytest
 from pathlib import Path
 
 from cli import main
 from experiments import ExperimentRunner
-from reports import ReportBuilder
+from reports import ReportBuilder, ReportSummary
+
+
+def test_report_summary_artifact_rejects_inconsistent_fields():
+    base = ReportSummary(1, 1, 0, 1, 1, 0.0, 1.0, [{}])
+    malformed = [
+        (ReportSummary(1, 2, 0, 1, 1, 0.0, 1.0, [{}]), "completed and failed runs exceed manifest count"),
+        (ReportSummary(1, 1, 0, 1, 1, 0.0, 1.0, []), "report runs count does not match run_count"),
+        (ReportSummary(0, 0, 0, 0, 0, 0.0, 0.0, [], health_count=1, healthy_count=2, health_reports=[{}]), "healthy count exceeds health count"),
+    ]
+    for summary, message in malformed:
+        with pytest.raises(ValueError, match=message):
+            summary.to_dict()
 
 
 def test_report_builder_aggregates_manifests(tmp_path: Path):

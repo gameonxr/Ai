@@ -56,6 +56,25 @@ class ReportSummary:
     checkpoints: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        counters = ("manifest_count", "completed_runs", "failed_runs", "total_episodes", "total_steps", "evaluation_count", "benchmark_count", "health_count", "healthy_count", "sweep_count", "checkpoint_count")
+        for field in counters:
+            _nonnegative_int(getattr(self, field))
+        if self.completed_runs + self.failed_runs > self.manifest_count:
+            raise ValueError("completed and failed runs exceed manifest count")
+        if self.healthy_count > self.health_count:
+            raise ValueError("healthy count exceeds health count")
+        means = ("mean_reward", "mean_steps_per_episode", "mean_evaluation_reward", "mean_realtime_factor")
+        for field in means:
+            _finite_float(getattr(self, field))
+        rows_by_count = (("runs", self.manifest_count), ("evaluations", self.evaluation_count), ("benchmarks", self.benchmark_count), ("health_reports", self.health_count), ("sweeps", self.sweep_count), ("checkpoints", self.checkpoint_count))
+        for field, expected_count in rows_by_count:
+            rows = getattr(self, field)
+            if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+                raise ValueError(f"report {field} must be a list of objects")
+            if len(rows) != expected_count:
+                raise ValueError(f"report {field} count does not match {field[:-1]}_count")
+        if not isinstance(self.artifact_errors, list) or any(not isinstance(error, str) for error in self.artifact_errors):
+            raise ValueError("report artifact_errors must be a list of strings")
         return {"artifact_type": "report", "schema_version": 1, **asdict(self)}
 
 
