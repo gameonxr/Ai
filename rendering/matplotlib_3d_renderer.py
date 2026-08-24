@@ -143,9 +143,16 @@ class Matplotlib3DRenderer(MatplotlibRenderer):
             if joint.parent in points and joint.child in points:
                 parent = points[joint.parent]
                 child = points[joint.child]
-                axis.plot([parent[0], child[0]], [parent[1], child[1]], [parent[2], child[2]], color="#2563eb", linewidth=4)
+                link = body.links.get(joint.child)
+                axis.plot(
+                    [parent[0], child[0]],
+                    [parent[1], child[1]],
+                    [parent[2], child[2]],
+                    color="#2563eb",
+                    linewidth=self._link_linewidth(link),
+                )
         for name, (x, y, z) in points.items():
-            axis.scatter([x], [y], [z], color="#0f172a", s=30, depthshade=True)
+            axis.scatter([x], [y], [z], color="#0f172a", s=self._joint_marker_size(body.links.get(name)), depthshade=True)
             if self.label_links:
                 axis.text(x, y, z, name, fontsize=7)
         figure.tight_layout()
@@ -173,6 +180,42 @@ class Matplotlib3DRenderer(MatplotlibRenderer):
         axis.set_ylim(*limits[1])
         axis.set_zlim(*limits[2])
         axis.set_box_aspect((1.0, 1.0, 1.2))
+
+    @staticmethod
+    def _link_linewidth(link) -> float:
+        if link is None:
+            return 4.0
+        if link.collision_shape == "capsule":
+            radius = Matplotlib3DRenderer._positive_property(link.properties.get("radius"), 0.05)
+            return min(9.0, max(2.5, 100.0 * radius))
+        if link.collision_shape == "sphere":
+            radius = Matplotlib3DRenderer._positive_property(link.properties.get("radius"), 0.1)
+            return min(9.0, max(3.0, 24.0 * radius))
+        dimensions = link.properties.get("dimensions")
+        if isinstance(dimensions, (list, tuple)) and dimensions:
+            largest = max(Matplotlib3DRenderer._positive_property(value, 0.1) for value in dimensions)
+            return min(9.0, max(3.0, 12.0 * largest))
+        return 4.0
+
+    @staticmethod
+    def _joint_marker_size(link) -> float:
+        if link is None:
+            return 30.0
+        if link.collision_shape == "sphere":
+            radius = Matplotlib3DRenderer._positive_property(link.properties.get("radius"), 0.1)
+            return min(180.0, max(30.0, 900.0 * radius))
+        dimensions = link.properties.get("dimensions")
+        if isinstance(dimensions, (list, tuple)) and dimensions:
+            largest = max(Matplotlib3DRenderer._positive_property(value, 0.1) for value in dimensions)
+            return min(180.0, max(30.0, 220.0 * largest))
+        radius = Matplotlib3DRenderer._positive_property(link.properties.get("radius"), 0.05)
+        return min(180.0, max(30.0, 700.0 * radius))
+
+    @staticmethod
+    def _positive_property(value: Any, fallback: float) -> float:
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)) or float(value) <= 0:
+            return fallback
+        return float(value)
 
     @staticmethod
     def _floor_size(state: dict[str, Any]) -> tuple[float, float] | None:

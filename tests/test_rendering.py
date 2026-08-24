@@ -26,6 +26,10 @@ def test_3d_projection_and_renderer_honor_world_floor():
     assert figure.axes[0].name == "3d"
     assert any(collection.__class__.__name__ == "Poly3DCollection" for collection in figure.axes[0].collections)
     assert len(figure.axes[0].lines) == body.dof
+    line_widths = {joint.child: line.get_linewidth() for joint, line in zip(body.joints.values(), figure.axes[0].lines)}
+    assert line_widths["upper_arm_r"] > line_widths["hand_r"]
+    marker_sizes = [collection.get_sizes()[0] for collection in figure.axes[0].collections if collection.__class__.__name__ != "Poly3DCollection"]
+    assert max(marker_sizes) > min(marker_sizes)
     renderer.close()
 
     state["world"] = World([0, 0, -9.81], floor_enabled=False).definition()
