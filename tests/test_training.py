@@ -8,6 +8,19 @@ from training import RandomTorquePolicy, Rollout, Trainer
 from training.rollout import Transition
 
 
+def test_random_torque_policy_validates_constructor_inputs():
+    invalid = [
+        (([], 0.05, None), "joint_names must be a non-empty list of strings"),
+        ((["neck", "neck"], 0.05, None), "joint_names must be unique"),
+        ((["neck"], float("nan"), None), "scale must be a finite non-negative number"),
+        ((["neck"], -0.1, None), "scale must be a finite non-negative number"),
+        ((["neck"], 0.05, True), "seed must be an integer or null"),
+    ]
+    for (joint_names, scale, seed), message in invalid:
+        with pytest.raises(ValueError, match=message):
+            RandomTorquePolicy(joint_names, scale=scale, seed=seed)
+
+
 def test_rollout_jsonl_persistence(tmp_path: Path):
     sim = Simulator("config/simulator_config.yaml")
     policy = RandomTorquePolicy(list(sim.actuators), seed=1)
