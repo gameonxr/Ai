@@ -97,6 +97,17 @@ class ReportBuilder:
                         raise ValueError("health config must be an object")
                     if "dependencies" in payload and not isinstance(payload["dependencies"], dict):
                         raise ValueError("health dependencies must be an object")
+                elif artifact_type == "sweep":
+                    if not isinstance(payload.get("sweep_id"), str) or not payload["sweep_id"].strip():
+                        raise ValueError("sweep_id must be a non-empty string")
+                    cases_requested = _nonnegative_int(payload.get("cases_requested", 0))
+                    cases_completed = _nonnegative_int(payload.get("cases_completed", 0))
+                    resumed_cases = _nonnegative_int(payload.get("resumed_cases", 0))
+                    if cases_completed > cases_requested or resumed_cases > cases_requested:
+                        raise ValueError("sweep counters exceed requested cases")
+                    manifests = payload.get("manifests", [])
+                    if not isinstance(manifests, list) or any(not isinstance(item, str) or not item.strip() for item in manifests):
+                        raise ValueError("sweep manifests must be a list of non-empty strings")
                 elif artifact_type not in {"evaluation", "benchmark", "health", "sweep", "checkpoint", "report"} and "status" in payload:
                     if payload["status"] not in {"running", "completed", "failed"}:
                         raise ValueError("manifest status must be recognized")

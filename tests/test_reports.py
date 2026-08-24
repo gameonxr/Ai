@@ -148,6 +148,30 @@ def test_report_builder_skips_malformed_numeric_artifacts(tmp_path: Path):
     assert len(summary.artifact_errors) == 5
 
 
+def test_report_builder_skips_malformed_sweep_artifacts(tmp_path: Path):
+    (tmp_path / "bad-sweep-counters.json").write_text(json.dumps({
+        "artifact_type": "sweep",
+        "schema_version": 1,
+        "sweep_id": "bad-sweep",
+        "cases_requested": 1,
+        "cases_completed": 2,
+        "resumed_cases": 0,
+        "manifests": [],
+    }), encoding="utf-8")
+    (tmp_path / "bad-sweep-manifests.json").write_text(json.dumps({
+        "artifact_type": "sweep",
+        "schema_version": 1,
+        "sweep_id": "bad-sweep",
+        "cases_requested": 1,
+        "cases_completed": 0,
+        "resumed_cases": 0,
+        "manifests": [""],
+    }), encoding="utf-8")
+    summary = ReportBuilder().build(tmp_path)
+    assert summary.sweep_count == 0
+    assert summary.artifact_errors == [str(tmp_path / "bad-sweep-counters.json"), str(tmp_path / "bad-sweep-manifests.json")]
+
+
 def test_report_builder_skips_malformed_manifest_fields(tmp_path: Path):
     (tmp_path / "bad-status.json").write_text(json.dumps({
         "status": "unknown",
