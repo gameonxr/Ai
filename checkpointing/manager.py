@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -79,7 +80,32 @@ class CheckpointManager:
         metadata = payload.get("metadata", {})
         if not isinstance(metadata, dict):
             raise ValueError("Checkpoint metadata must be a JSON object")
-        return Checkpoint(checkpoint_version, payload["run_id"], int(payload["episode"]), int(payload["step"]), float(payload["current_time"]), simulator_state, payload["metrics"], metadata, artifact_type, schema_version)
+        episode = cls._nonnegative_int(payload["episode"], "episode")
+        step = cls._nonnegative_int(payload["step"], "step")
+        current_time = cls._nonnegative_float(payload["current_time"], "current_time")
+        return Checkpoint(checkpoint_version, payload["run_id"], episode, step, current_time, simulator_state, payload["metrics"], metadata, artifact_type, schema_version)
+
+    @staticmethod
+    def _nonnegative_int(value: Any, name: str) -> int:
+        if isinstance(value, bool):
+            raise ValueError(f"Checkpoint {name} must be a non-negative integer")
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"Checkpoint {name} must be a non-negative integer") from error
+        if not math.isfinite(numeric) or numeric < 0 or not numeric.is_integer():
+            raise ValueError(f"Checkpoint {name} must be a non-negative integer")
+        return int(numeric)
+
+    @staticmethod
+    def _nonnegative_float(value: Any, name: str) -> float:
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"Checkpoint {name} must be a finite non-negative number") from error
+        if not math.isfinite(numeric) or numeric < 0:
+            raise ValueError(f"Checkpoint {name} must be a finite non-negative number")
+        return numeric
 
     @classmethod
     def restore(cls, simulator, path: str | Path) -> Checkpoint:

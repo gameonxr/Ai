@@ -39,6 +39,33 @@ def test_checkpoint_loader_reports_invalid_json_and_missing_file(tmp_path: Path)
         CheckpointManager.load(missing)
 
 
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("episode", -1, "Checkpoint episode must be a non-negative integer"),
+        ("episode", 1.5, "Checkpoint episode must be a non-negative integer"),
+        ("step", "invalid", "Checkpoint step must be a non-negative integer"),
+        ("current_time", -0.1, "Checkpoint current_time must be a finite non-negative number"),
+        ("current_time", float("inf"), "Checkpoint current_time must be a finite non-negative number"),
+    ],
+)
+def test_checkpoint_numeric_fields_are_validated(tmp_path: Path, field, value, message):
+    path = tmp_path / f"bad-{field}.json"
+    payload = {
+        "version": 1,
+        "run_id": "numeric-check",
+        "episode": 0,
+        "step": 0,
+        "current_time": 0.0,
+        "simulator_state": {"physics": {}},
+        "metrics": {},
+    }
+    payload[field] = value
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match=message):
+        CheckpointManager.load(path)
+
+
 def test_checkpoint_version_is_validated(tmp_path: Path):
     path = tmp_path / "bad.json"
     path.write_text('{"version": 999}', encoding="utf-8")
