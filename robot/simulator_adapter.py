@@ -30,8 +30,17 @@ class _QueuedActionBrain(BrainInterface):
 class SimulatedRobotAdapter(RobotAdapter):
     """Run the robot adapter contract against Simulator without direct physics access."""
 
-    def __init__(self, simulator: Simulator):
+    def __init__(self, simulator: Simulator, config: dict | None = None):
+        if config is not None and not isinstance(config, dict):
+            raise ValueError("Robot adapter config must be a mapping when provided")
+        settings = (config or {}).get("robot_adapter", config or {})
+        if not isinstance(settings, dict):
+            raise ValueError("robot_adapter settings must be a mapping")
+        emergency_stop = settings.get("emergency_stop_on_disconnect", True)
+        if not isinstance(emergency_stop, bool):
+            raise ValueError("emergency_stop_on_disconnect must be a boolean")
         self.simulator = simulator
+        self.emergency_stop_on_disconnect = emergency_stop
         self.brain = _QueuedActionBrain()
         self._connected = False
         self._last_observation: Observation | None = None
@@ -44,6 +53,9 @@ class SimulatedRobotAdapter(RobotAdapter):
 
     def disconnect(self) -> None:
         if self._connected:
+            if self.emergency_stop_on_disconnect:
+                self.brain.pending = Action.noop()
+                self.simulator.pause()
             self.simulator.set_brain(None)
         self._connected = False
 
