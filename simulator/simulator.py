@@ -37,7 +37,7 @@ class Simulator:
         self.world = World(physics_cfg.get("gravity", [0, 0, -9.81]), environment_cfg.get("floor_enabled", True), environment_cfg.get("floor_friction", 0.5), environment_cfg.get("floor_size", [10, 10]))
         sensor_cfg = self.config["sensors"].get("loaded", {}).get("sensors", self.config["sensors"])
         actuator_cfg = self.config["actuators"].get("loaded", {}).get("actuators", self.config["actuators"])
-        self.sensors = build_sensors(sensor_cfg)
+        self.sensors = build_sensors(sensor_cfg, body=self.body)
         self.actuators = build_actuators(self.body.joints, actuator_cfg)
         self.actuator_controller = ActuatorController(self.actuators)
         self.validator = ActionValidator(self.actuators, self.config["simulator"])
@@ -101,6 +101,7 @@ class Simulator:
                 return observation
             self.physics.step(self.timestep)
             state = self.physics.get_body_state()
+            state["world"] = self.world.definition()
             state["contacts"] = self.physics.get_contact_info() if self.world.floor_enabled else []
             observation = self.observation_builder.build(state, self.current_time)
             action_applied = False

@@ -3,6 +3,7 @@ import math
 
 import pytest
 
+from body import BodyLoader
 from sensors.imu import IMUSensor
 from sensors.proprioception import ProprioceptionSensor
 from sensors.sensor_registry import build_sensors
@@ -50,6 +51,24 @@ def test_vision_sensor_validates_camera_configuration():
     sensor = VisionSensor("vision", {"resolution": [80, 60], "fov": 120.0})
     assert sensor.observe({})["resolution"] == (80, 60)
     assert sensor.observe({})["fov"] == 120.0
+
+
+def test_vision_sensor_rasterizes_configured_body_projection():
+    body = BodyLoader.load("config/body_humanoid.yaml")
+    sensor = VisionSensor("vision", {"resolution": [32, 24]}, body=body)
+    state = {"joint_positions": {name: 0.0 for name in body.joints}, "world": {"floor_enabled": True, "objects": [{"type": "floor", "size": (4.0, 6.0)}]}}
+    reading = sensor.observe(state)
+    assert reading["available"] is True
+    assert reading["rgb"].shape == (24, 32, 3)
+    assert reading["rgb"].dtype.name == "uint8"
+    assert reading["non_background_pixels"] > 0
+    assert reading["source"] == "headless_body_projection"
+
+
+def test_vision_sensor_without_body_reports_unavailable_frame():
+    reading = VisionSensor("vision").observe({"joint_positions": {}})
+    assert reading["available"] is False
+    assert reading["non_background_pixels"] == 0
 
 
 def test_sensor_base_rejects_malformed_constructor_inputs():
