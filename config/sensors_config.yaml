@@ -3,5 +3,6 @@ sensors:
   vision: {enabled: false, resolution: [64, 64], fov: 90.0}
   depth: {enabled: false, resolution: [64, 64]}
   segmentation: {enabled: false, resolution: [64, 64]}
+  perception: {enabled: false}
   imu: {enabled: true, noise_std: 0.0, filter_alpha: 1.0}
   touch: {enabled: false}
