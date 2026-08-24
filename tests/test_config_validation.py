@@ -125,6 +125,26 @@ def test_validator_reports_body_and_actuator_semantic_errors(tmp_path: Path):
 
 
 @pytest.mark.parametrize(
+    ("rendering", "message"),
+    [
+        ([], "rendering must be a mapping when provided"),
+        ({"enabled": "false"}, "rendering.enabled must be a boolean"),
+        ({"renderer": ""}, "rendering.renderer must be a non-empty string"),
+    ],
+)
+def test_validator_reports_invalid_rendering_values(tmp_path: Path, rendering, message):
+    config = tmp_path / "rendering-invalid.yaml"
+    config.write_text(
+        "simulator: {}\nphysics: {}\nbody: {}\nsensors: {}\nactuators: {}\n"
+        + yaml.safe_dump({"rendering": rendering}),
+        encoding="utf-8",
+    )
+    report = ConfigurationValidator().validate(config)
+    assert not report.valid
+    assert message in report.errors
+
+
+@pytest.mark.parametrize(
     ("environment", "message"),
     [
         ([], "environment must be a mapping when provided"),

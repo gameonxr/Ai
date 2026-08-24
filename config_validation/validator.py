@@ -97,6 +97,9 @@ class ConfigurationValidator:
         environment = config.get("environment")
         if environment is not None:
             self._validate_environment(environment, errors)
+        rendering = config.get("rendering")
+        if rendering is not None:
+            self._validate_rendering(rendering, errors)
         logging_cfg = config.get("logging")
         if logging_cfg is not None and not isinstance(logging_cfg, dict):
             errors.append("logging must be a mapping when provided")
@@ -163,6 +166,17 @@ class ConfigurationValidator:
                 or not all(_is_finite_number(value) and float(value) > 0 for value in floor_size)
             ):
                 errors.append("environment.floor_size must be a finite positive 2-vector")
+
+    @staticmethod
+    def _validate_rendering(rendering: Any, errors: list[str]) -> None:
+        if not isinstance(rendering, dict):
+            errors.append("rendering must be a mapping when provided")
+            return
+        if "enabled" in rendering and not isinstance(rendering["enabled"], bool):
+            errors.append("rendering.enabled must be a boolean")
+        renderer = rendering.get("renderer", "matplotlib")
+        if not isinstance(renderer, str) or not renderer.strip():
+            errors.append("rendering.renderer must be a non-empty string")
 
     @staticmethod
     def _validate_actuators(actuator_config: dict[str, Any], errors: list[str], warnings: list[str]) -> None:
