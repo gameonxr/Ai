@@ -7,4 +7,13 @@ SENSOR_TYPES = {"proprioception": ProprioceptionSensor, "vision": VisionSensor, 
 
 
 def build_sensors(config: dict) -> dict:
-    return {name: SENSOR_TYPES[name](name, settings or {}) for name, settings in config.items() if name in SENSOR_TYPES}
+    if not isinstance(config, dict):
+        raise ValueError("sensor configuration must be an object")
+    sensors = {}
+    for name, settings in config.items():
+        if name not in SENSOR_TYPES:
+            continue
+        if settings is not None and not isinstance(settings, dict):
+            raise ValueError(f"sensor settings for {name} must be an object")
+        sensors[name] = SENSOR_TYPES[name](name, settings or {})
+    return sensors

@@ -7,6 +7,13 @@ from sensors.sensor_registry import build_sensors
 from sensors.transforms import GaussianNoise, LowPassFilter
 
 
+def test_sensor_registry_rejects_malformed_configuration():
+    with pytest.raises(ValueError, match="sensor configuration must be an object"):
+        build_sensors([])  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="sensor settings for imu must be an object"):
+        build_sensors({"imu": []})  # type: ignore[arg-type]
+
+
 def test_sensor_transforms_reject_invalid_parameters():
     for value in (True, -0.1, math.nan, "0.1"):
         with pytest.raises(ValueError, match="standard_deviation"):
