@@ -21,6 +21,22 @@ def test_renderer_auto_scales_to_body_points():
     engine.shutdown()
 
 
+def test_renderer_grid_is_optional():
+    body = BodyLoader.load("config/body_humanoid.yaml")
+    engine = MuJoCoBackend({})
+    engine.load_body(body)
+    default_renderer = MatplotlibRenderer()
+    default_figure = default_renderer.render(body, engine.get_body_state())
+    assert not any(line.get_visible() for line in default_figure.axes[0].get_xgridlines())
+    default_renderer.close()
+
+    grid_renderer = MatplotlibRenderer({"show_grid": True})
+    grid_figure = grid_renderer.render(body, engine.get_body_state())
+    assert any(line.get_visible() for line in grid_figure.axes[0].get_xgridlines())
+    grid_renderer.close()
+    engine.shutdown()
+
+
 def test_renderer_draws_optional_ground_reference():
     body = BodyLoader.load("config/body_humanoid.yaml")
     engine = MuJoCoBackend({})
