@@ -124,11 +124,13 @@ class ReportBuilder:
                         _nonnegative_int(payload.get(field, 0))
                     for field in ("mean_reward", "mean_steps_per_episode", "mean_evaluation_reward", "mean_realtime_factor"):
                         _finite_float(payload.get(field, 0.0))
-                    for field in ("runs", "evaluations", "benchmarks", "health_reports", "sweeps", "checkpoints", "artifact_errors"):
-                        if not isinstance(payload.get(field, []), list):
-                            raise ValueError(f"report {field} must be a list")
-                    if any(not isinstance(error, str) for error in payload.get("artifact_errors", [])):
-                        raise ValueError("report artifact_errors must contain strings")
+                    for field in ("runs", "evaluations", "benchmarks", "health_reports", "sweeps", "checkpoints"):
+                        rows = payload.get(field, [])
+                        if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+                            raise ValueError(f"report {field} must be a list of objects")
+                    report_errors = payload.get("artifact_errors", [])
+                    if not isinstance(report_errors, list) or any(not isinstance(error, str) for error in report_errors):
+                        raise ValueError("report artifact_errors must be a list of strings")
                 elif artifact_type not in {"evaluation", "benchmark", "health", "sweep", "checkpoint", "report"} and "status" in payload:
                     if payload["status"] not in {"running", "completed", "failed"}:
                         raise ValueError("manifest status must be recognized")
