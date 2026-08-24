@@ -3,8 +3,15 @@ import math
 
 import pytest
 
+from sensors.imu import IMUSensor
 from sensors.sensor_registry import build_sensors
 from sensors.transforms import GaussianNoise, LowPassFilter
+
+
+def test_sensor_base_rejects_malformed_constructor_inputs():
+    for name, config, message in (("", {}, "sensor name must be a non-empty string"), ("imu", [], "sensor config must be an object"), ("imu", {"enabled": 1}, "sensor enabled must be a boolean")):
+        with pytest.raises(ValueError, match=message):
+            IMUSensor(name, config)  # type: ignore[arg-type]
 
 
 def test_sensor_registry_rejects_malformed_configuration():
