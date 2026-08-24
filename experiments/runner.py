@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
+import math
 from pathlib import Path
 from typing import Any, Callable
 
@@ -28,6 +29,52 @@ class RunManifest:
     seed: int | None = None
     artifact_type: str = "experiment_manifest"
     schema_version: int = 1
+
+    def to_artifact_dict(self) -> dict[str, Any]:
+        """Return a validated experiment manifest payload for persistence."""
+        if not isinstance(self.run_id, str) or not self.run_id.strip():
+            raise ValueError("run_id must be a non-empty string")
+        if self.status not in {"running", "completed", "failed"}:
+            raise ValueError("status must be running, completed, or failed")
+        for field in ("started_at", "config_path"):
+            value = getattr(self, field)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{field} must be a non-empty string")
+        if self.finished_at is not None and (not isinstance(self.finished_at, str) or not self.finished_at.strip()):
+            raise ValueError("finished_at must be a non-empty string or null")
+        if isinstance(self.schema_version, bool) or not isinstance(self.schema_version, int) or self.schema_version != 1:
+            raise ValueError("schema_version must be 1")
+        if self.artifact_type != "experiment_manifest":
+            raise ValueError("artifact_type must be experiment_manifest")
+        if isinstance(self.episodes_requested, bool) or not isinstance(self.episodes_requested, int) or self.episodes_requested < 1:
+            raise ValueError("episodes_requested must be a positive integer")
+        for field in ("episodes_completed", "total_steps"):
+            value = getattr(self, field)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise ValueError(f"{field} must be a non-negative integer")
+        if self.episodes_completed > self.episodes_requested:
+            raise ValueError("episodes_completed cannot exceed episodes_requested")
+        if isinstance(self.max_steps_requested, bool) or not isinstance(self.max_steps_requested, int) or self.max_steps_requested < 1:
+            raise ValueError("max_steps_requested must be a positive integer")
+        if self.seed is not None and (isinstance(self.seed, bool) or not isinstance(self.seed, int)):
+            raise ValueError("seed must be an integer or null")
+        if self.checkpoint_path is not None and (not isinstance(self.checkpoint_path, str) or not self.checkpoint_path.strip()):
+            raise ValueError("checkpoint_path must be a non-empty string or null")
+        if not isinstance(self.metadata, dict):
+            raise ValueError("metadata must be an object")
+        if not isinstance(self.metrics, list) or any(not isinstance(item, dict) for item in self.metrics):
+            raise ValueError("metrics must be a list of objects")
+        for item in self.metrics:
+            for field in ("episode", "steps"):
+                value = item.get(field, 0)
+                if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                    raise ValueError(f"metric {field} must be a non-negative integer")
+            reward = item.get("total_reward", 0.0)
+            if isinstance(reward, bool) or not isinstance(reward, (int, float)) or not math.isfinite(float(reward)):
+                raise ValueError("metric total_reward must be a finite number")
+            if "terminated" in item and not isinstance(item["terminated"], bool):
+                raise ValueError("metric terminated must be boolean")
+        return asdict(self)
 
 
 class ExperimentRunner:
@@ -94,4 +141,4 @@ class ExperimentRunner:
     def _save_manifest(self, manifest: RunManifest) -> None:
         self.manifest_dir.mkdir(parents=True, exist_ok=True)
         path = self.manifest_dir / f"{manifest.run_id}.json"
-        write_json_atomic(asdict(manifest), path)
+        write_json_atomic(manifest.to_artifact_dict(), path)

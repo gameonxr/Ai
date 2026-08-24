@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from experiments import ExperimentRunner
+from experiments import ExperimentRunner, RunManifest
 
 
 def test_experiment_runner_writes_manifest_and_checkpoint(tmp_path: Path):
@@ -17,6 +17,19 @@ def test_experiment_runner_writes_manifest_and_checkpoint(tmp_path: Path):
     payload = json.loads((tmp_path / "test-run.json").read_text(encoding="utf-8"))
     assert payload["run_id"] == "test-run"
     assert len(payload["metrics"]) == 2
+
+
+def test_run_manifest_artifact_rejects_malformed_fields():
+    base = RunManifest("run", "completed", "started", "finished", "config.yaml", 1, 1, 1)
+    malformed = [
+        ("status", "paused", "status must be running, completed, or failed"),
+        ("episodes_completed", 2, "episodes_completed cannot exceed episodes_requested"),
+        ("metrics", [{"episode": 0, "steps": 1, "total_reward": float("nan")}], "metric total_reward must be a finite number"),
+    ]
+    for field, value, message in malformed:
+        candidate = RunManifest(**{**base.__dict__, field: value})
+        with pytest.raises(ValueError, match=message):
+            candidate.to_artifact_dict()
 
 
 def test_experiment_runner_validates_limits(tmp_path: Path):
