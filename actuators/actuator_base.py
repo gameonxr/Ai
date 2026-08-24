@@ -5,13 +5,26 @@ import math
 
 class Actuator:
     def __init__(self, name: str, joint_name: str, config: dict | None = None):
+        if config is not None and not isinstance(config, dict):
+            raise ValueError("Actuator config must be a mapping when provided")
         self.name, self.joint_name, self.config = name, joint_name, config or {}
-        self.max_torque = float(self.config.get("max_torque", 100.0))
-        self.max_velocity = float(self.config.get("max_velocity", 100.0))
-        self.max_force = float(self.config.get("max_force", 100.0))
-        self.damping = float(self.config.get("damping", 0.01))
-        self.response_time = max(0.0, float(self.config.get("response_time", 0.0)))
+        self.max_torque = self._numeric_config("max_torque", 100.0, positive=True)
+        self.max_velocity = self._numeric_config("max_velocity", 100.0, positive=True)
+        self.max_force = self._numeric_config("max_force", 100.0, positive=True)
+        self.damping = self._numeric_config("damping", 0.01)
+        self.response_time = self._numeric_config("response_time", 0.0)
         self.current_command = 0.0
+
+    def _numeric_config(self, name: str, default: float, positive: bool = False) -> float:
+        value = self.config.get(name, default)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+            raise ValueError(f"Actuator {name} must be a finite number")
+        value = float(value)
+        if positive and value <= 0:
+            raise ValueError(f"Actuator {name} must be positive")
+        if not positive and value < 0:
+            raise ValueError(f"Actuator {name} must be non-negative")
+        return value
 
     def validate_command(self, value: float) -> tuple[bool, float]:
         try:
