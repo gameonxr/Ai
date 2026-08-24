@@ -25,7 +25,22 @@ _SEGMENTS = {
 
 def project_body(body, state: dict[str, Any]) -> dict[str, tuple[float, float]]:
     """Project configured links into deterministic 2D points for visualization."""
+    if not isinstance(state, dict):
+        raise ValueError("Body state must be a mapping")
     positions = state.get("joint_positions", {})
+    if not isinstance(positions, dict):
+        raise ValueError("Body state joint_positions must be a mapping")
+    normalized_positions: dict[str, float] = {}
+    for name, value in positions.items():
+        if isinstance(value, bool):
+            raise ValueError(f"Body state joint position must be finite: {name}")
+        try:
+            angle = float(value)
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"Body state joint position must be numeric: {name}") from error
+        if not math.isfinite(angle):
+            raise ValueError(f"Body state joint position must be finite: {name}")
+        normalized_positions[name] = angle
     points: dict[str, tuple[float, float]] = {"torso": (0.0, 1.0)}
     parent_for = {joint.child: joint.parent for joint in body.joints.values()}
     joint_for_child = {joint.child: joint.name for joint in body.joints.values()}
@@ -40,7 +55,7 @@ def project_body(body, state: dict[str, Any]) -> dict[str, tuple[float, float]]:
         parent = parent_for.get(link, "torso")
         px, py = point_for(parent, visiting)
         dx, dy, bias = _SEGMENTS[link]
-        angle = float(positions.get(joint_for_child.get(link, ""), 0.0)) + bias
+        angle = normalized_positions.get(joint_for_child.get(link, ""), 0.0) + bias
         cos_a, sin_a = math.cos(angle), math.sin(angle)
         x = px + dx * cos_a - dy * sin_a
         y = py + dx * sin_a + dy * cos_a

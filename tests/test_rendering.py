@@ -5,6 +5,7 @@ import pytest
 from body import BodyLoader
 from physics import MuJoCoBackend
 from rendering import MatplotlibRenderer
+from rendering.kinematics import project_body
 
 
 def test_renderer_auto_scales_to_body_points():
@@ -25,6 +26,18 @@ def test_renderer_auto_scales_to_body_points():
 def test_renderer_rejects_non_mapping_config(config):
     with pytest.raises(ValueError, match="Renderer config must be a mapping"):
         MatplotlibRenderer(config)
+
+
+def test_project_body_rejects_malformed_state():
+    body = BodyLoader.load("config/body_humanoid.yaml")
+    with pytest.raises(ValueError, match="Body state must be a mapping"):
+        project_body(body, [])
+    with pytest.raises(ValueError, match="joint_positions must be a mapping"):
+        project_body(body, {"joint_positions": []})
+    with pytest.raises(ValueError, match="joint position must be numeric"):
+        project_body(body, {"joint_positions": {"neck": "not-a-number"}})
+    with pytest.raises(ValueError, match="joint position must be finite"):
+        project_body(body, {"joint_positions": {"neck": float("nan")}})
 
 
 def test_renderer_grid_is_optional():
