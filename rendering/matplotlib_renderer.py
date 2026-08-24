@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import math
+
 from .kinematics import project_body
 from .renderer import Renderer
 
@@ -16,6 +18,10 @@ class MatplotlibRenderer(Renderer):
         self.height = int(self.config.get("height", 640))
         self.dpi = int(self.config.get("dpi", 100))
         self.show_axes = bool(self.config.get("show_axes", True))
+        self.auto_scale = bool(self.config.get("auto_scale", True))
+        self.padding = float(self.config.get("padding", 0.15))
+        if not math.isfinite(self.padding) or self.padding < 0:
+            raise ValueError("Renderer padding must be finite and non-negative")
         self.last_figure = None
 
     def render(self, body, state: dict[str, Any], output_path: str | Path | None = None):
@@ -26,8 +32,13 @@ class MatplotlibRenderer(Renderer):
         points = project_body(body, state)
         figure, axis = plt.subplots(figsize=(self.width / self.dpi, self.height / self.dpi), dpi=self.dpi)
         axis.set_aspect("equal", adjustable="box")
-        axis.set_xlim(-1.4, 1.4)
-        axis.set_ylim(-0.8, 2.0)
+        if self.auto_scale and points:
+            x_values = [point[0] for point in points.values()]
+            y_values = [point[1] for point in points.values()]
+            self._set_auto_limits(axis, x_values, y_values)
+        else:
+            axis.set_xlim(-1.4, 1.4)
+            axis.set_ylim(-0.8, 2.0)
         axis.set_title("AI Body Simulator")
         if not self.show_axes:
             axis.axis("off")
@@ -48,6 +59,17 @@ class MatplotlibRenderer(Renderer):
             figure.savefig(output, format=output.suffix.lstrip(".") or "png")
         self.last_figure = figure
         return figure
+
+    def _set_auto_limits(self, axis, x_values: list[float], y_values: list[float]) -> None:
+        def limits(values: list[float]) -> tuple[float, float]:
+            minimum = min(values)
+            maximum = max(values)
+            span = max(maximum - minimum, 0.5)
+            margin = max(span * self.padding, 0.1)
+            return minimum - margin, maximum + margin
+
+        axis.set_xlim(*limits(x_values))
+        axis.set_ylim(*limits(y_values))
 
     def close(self) -> None:
         if self.last_figure is not None:
