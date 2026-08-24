@@ -41,6 +41,31 @@ def test_simulator_rejects_invalid_rendering_configuration(monkeypatch, renderin
         Simulator("config/simulator_config.yaml")
 
 
+def test_get_state_exposes_world_definition():
+    sim = Simulator("config/simulator_config.yaml")
+    try:
+        state = sim.get_state()
+        assert state["world"]["floor_enabled"] is True
+        assert state["world"]["objects"] == [{"type": "floor", "size": (10.0, 10.0), "friction": 0.5}]
+    finally:
+        sim.shutdown()
+
+
+def test_get_state_exposes_disabled_floor_without_objects(monkeypatch):
+    from simulator.config_loader import ConfigLoader
+
+    base = ConfigLoader("config/simulator_config.yaml").load()
+    base["environment"]["floor_enabled"] = False
+    monkeypatch.setattr(ConfigLoader, "load", lambda self: base)
+    sim = Simulator("config/simulator_config.yaml")
+    try:
+        state = sim.get_state()
+        assert state["world"]["floor_enabled"] is False
+        assert state["world"]["objects"] == []
+    finally:
+        sim.shutdown()
+
+
 def test_floor_configuration_controls_contact_observations(monkeypatch):
     from simulator.config_loader import ConfigLoader
 

@@ -131,7 +131,14 @@ class Simulator:
 
     def get_state(self) -> dict:
         self._ensure_active()
-        return {"current_time": self.current_time, "step_count": self.step_count, "paused": self.paused, "physics_state": self.physics.get_body_state(), "metrics": self.metrics.snapshot()}
+        return {
+            "current_time": self.current_time,
+            "step_count": self.step_count,
+            "paused": self.paused,
+            "world": self.world.definition(),
+            "physics_state": self.physics.get_body_state(),
+            "metrics": self.metrics.snapshot(),
+        }
 
     def save_checkpoint(self, path: str | Path, run_id: str = "default", metadata: dict | None = None):
         """Persist simulator state for a later resumable run."""
