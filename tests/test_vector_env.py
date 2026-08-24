@@ -15,6 +15,16 @@ def test_vectorized_reset_and_step():
     vector.close()
 
 
+def test_vectorized_close_is_idempotent_and_guards_operations():
+    vector = VectorizedSimulator("config/simulator_config.yaml", num_envs=1)
+    vector.reset(seed=2)
+    vector.close()
+    vector.close()
+    for operation in (lambda: vector.reset(), lambda: vector.step(), lambda: vector.get_states()):
+        with pytest.raises(RuntimeError, match="VectorizedSimulator is closed"):
+            operation()
+
+
 def test_vectorized_num_envs_requires_positive_integer():
     for value in (0, -1, True, 1.5, "2"):
         with pytest.raises(ValueError, match="num_envs must be a positive integer"):
