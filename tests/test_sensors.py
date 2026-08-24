@@ -6,6 +6,19 @@ import pytest
 from sensors.imu import IMUSensor
 from sensors.sensor_registry import build_sensors
 from sensors.transforms import GaussianNoise, LowPassFilter
+from sensors.vision import VisionSensor
+
+
+def test_vision_sensor_validates_camera_configuration():
+    for resolution in ([64], [64, 0], [64, True], "64x64"):
+        with pytest.raises(ValueError, match="vision resolution"):
+            VisionSensor("vision", {"resolution": resolution})  # type: ignore[arg-type]
+    for fov in (0.0, 181.0, math.nan, True, "90"):
+        with pytest.raises(ValueError, match="vision fov"):
+            VisionSensor("vision", {"fov": fov})  # type: ignore[arg-type]
+    sensor = VisionSensor("vision", {"resolution": [80, 60], "fov": 120.0})
+    assert sensor.observe({})["resolution"] == (80, 60)
+    assert sensor.observe({})["fov"] == 120.0
 
 
 def test_sensor_base_rejects_malformed_constructor_inputs():
