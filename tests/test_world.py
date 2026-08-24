@@ -12,6 +12,18 @@ def test_world_normalizes_valid_configuration():
     assert world.floor_size == (10.0, 12.0)
 
 
+def test_world_exposes_static_floor_object():
+    world = World([0, 0, -9.81], floor_friction=0.25, floor_size=[10, 12])
+    assert world.floor is not None
+    assert world.floor.size == (10.0, 12.0)
+    assert world.floor.friction == 0.25
+    assert world.definition()["objects"] == [{"type": "floor", "size": (10.0, 12.0), "friction": 0.25}]
+
+    disabled = World([0, 0, -9.81], floor_enabled=False)
+    assert disabled.floor is None
+    assert disabled.definition()["objects"] == []
+
+
 def test_world_rejects_invalid_gravity():
     for value in ([0.0, 0.0], [0.0, 0.0, math.nan], "gravity"):
         with pytest.raises(ValueError, match="gravity must be a finite 3-vector"):

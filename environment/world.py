@@ -1,5 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import math
+
+from .static_objects import Floor
 
 
 @dataclass
@@ -8,6 +10,7 @@ class World:
     floor_enabled: bool = True
     floor_friction: float = 0.5
     floor_size: tuple[float, float] = (10.0, 10.0)
+    floor: Floor | None = field(init=False, default=None)
 
     def __post_init__(self) -> None:
         if not isinstance(self.gravity, (list, tuple)) or len(self.gravity) != 3:
@@ -33,6 +36,13 @@ class World:
         self.gravity = gravity
         self.floor_friction = float(self.floor_friction)
         self.floor_size = floor_size
+        self.floor = Floor(self.floor_size, self.floor_friction) if self.floor_enabled else None
 
     def definition(self) -> dict:
-        return {"gravity": self.gravity, "floor_enabled": self.floor_enabled, "floor_friction": self.floor_friction, "floor_size": self.floor_size}
+        return {
+            "gravity": self.gravity,
+            "floor_enabled": self.floor_enabled,
+            "floor_friction": self.floor_friction,
+            "floor_size": self.floor_size,
+            "objects": [] if self.floor is None else [{"type": "floor", "size": self.floor.size, "friction": self.floor.friction}],
+        }
