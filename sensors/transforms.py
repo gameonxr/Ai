@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from typing import Any
+import math
 
 import numpy as np
 
@@ -20,14 +21,21 @@ class GaussianNoise:
     """Add seeded Gaussian noise to numeric sensor values."""
 
     def __init__(self, standard_deviation: float = 0.0, seed: int | None = None):
-        if standard_deviation < 0:
-            raise ValueError("standard_deviation must be >= 0")
+        if isinstance(standard_deviation, bool) or not isinstance(standard_deviation, (int, float, np.integer, np.floating)) or not math.isfinite(float(standard_deviation)) or float(standard_deviation) < 0:
+            raise ValueError("standard_deviation must be a finite non-negative number")
+        self._validate_seed(seed)
         self.standard_deviation = float(standard_deviation)
         self.rng = np.random.default_rng(seed)
 
     def reset(self, seed: int | None = None) -> None:
+        self._validate_seed(seed)
         if seed is not None:
             self.rng = np.random.default_rng(seed)
+
+    @staticmethod
+    def _validate_seed(seed: int | None) -> None:
+        if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
+            raise ValueError("seed must be an integer or null")
 
     def apply(self, value: Any):
         return _map_numeric(value, lambda item: item + float(self.rng.normal(0.0, self.standard_deviation))) if self.standard_deviation else deepcopy(value)
@@ -37,8 +45,8 @@ class LowPassFilter:
     """First-order exponential filter for nested numeric readings."""
 
     def __init__(self, alpha: float = 1.0):
-        if not 0 < alpha <= 1:
-            raise ValueError("alpha must be in (0, 1]")
+        if isinstance(alpha, bool) or not isinstance(alpha, (int, float, np.integer, np.floating)) or not math.isfinite(float(alpha)) or not 0 < float(alpha) <= 1:
+            raise ValueError("alpha must be a finite number in (0, 1]")
         self.alpha = float(alpha)
         self.previous = None
 

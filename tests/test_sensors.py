@@ -4,6 +4,20 @@ import math
 import pytest
 
 from sensors.sensor_registry import build_sensors
+from sensors.transforms import GaussianNoise, LowPassFilter
+
+
+def test_sensor_transforms_reject_invalid_parameters():
+    for value in (True, -0.1, math.nan, "0.1"):
+        with pytest.raises(ValueError, match="standard_deviation"):
+            GaussianNoise(value)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="seed must be an integer or null"):
+        GaussianNoise(seed=True)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="seed must be an integer or null"):
+        GaussianNoise().reset(seed=True)  # type: ignore[arg-type]
+    for value in (True, 0.0, 1.1, math.nan, "1.0"):
+        with pytest.raises(ValueError, match="alpha"):
+            LowPassFilter(value)  # type: ignore[arg-type]
 
 
 def test_observation_builder_rejects_invalid_inputs():
