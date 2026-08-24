@@ -43,6 +43,17 @@ def test_sweep_runner_loads_json_cases_and_cli(capsys, tmp_path: Path):
     assert report.runs[0]["metadata"]["sweep_id"] == "cli-sweep"
 
 
+def test_sweep_loader_reports_invalid_json_and_missing_file(tmp_path: Path):
+    invalid = tmp_path / "invalid-cases.json"
+    invalid.write_text("{broken", encoding="utf-8")
+    with pytest.raises(ValueError, match="Invalid sweep cases JSON in .+invalid-cases.json: Expecting"):
+        SweepRunner.load_cases(invalid)
+
+    missing = tmp_path / "missing-cases.json"
+    with pytest.raises(ValueError, match="Unable to read sweep cases .+missing-cases.json:"):
+        SweepRunner.load_cases(missing)
+
+
 def test_sweep_runner_rejects_empty_and_duplicate_cases(tmp_path: Path):
     runner = SweepRunner("invalid", tmp_path)
     with pytest.raises(ValueError):

@@ -49,7 +49,13 @@ class SweepRunner:
 
     @staticmethod
     def load_cases(path: str | Path) -> list[dict[str, Any]]:
-        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+        cases_path = Path(path)
+        try:
+            payload = json.loads(cases_path.read_text(encoding="utf-8"))
+        except OSError as error:
+            raise ValueError(f"Unable to read sweep cases {cases_path}: {error}") from error
+        except json.JSONDecodeError as error:
+            raise ValueError(f"Invalid sweep cases JSON in {cases_path}: {error.msg}") from error
         if not isinstance(payload, list) or not payload:
             raise ValueError("sweep cases must be a non-empty JSON list")
         if any(not isinstance(case, dict) for case in payload):
