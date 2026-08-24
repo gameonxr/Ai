@@ -16,6 +16,22 @@ def test_validator_reports_missing_section(tmp_path: Path):
     assert any("Missing required section" in error for error in report.errors)
 
 
+def test_validator_reports_unreadable_root_path(tmp_path: Path):
+    unreadable = tmp_path / "root-directory"
+    unreadable.mkdir()
+    report = ConfigurationValidator().validate(unreadable)
+    assert not report.valid
+    assert any("Unable to read configuration" in error for error in report.errors)
+
+
+def test_validator_reports_non_mapping_root(tmp_path: Path):
+    path = tmp_path / "list.yaml"
+    path.write_text("[]\n", encoding="utf-8")
+    report = ConfigurationValidator().validate(path)
+    assert not report.valid
+    assert report.errors == ["Root configuration must be a mapping"]
+
+
 def test_validator_reports_invalid_yaml(tmp_path: Path):
     path = tmp_path / "invalid.yaml"
     path.write_text("simulator: [\n", encoding="utf-8")
@@ -24,7 +40,26 @@ def test_validator_reports_invalid_yaml(tmp_path: Path):
     assert any("Invalid YAML" in error for error in report.errors)
 
 
-def test_validator_reports_missing_reference(tmp_path: Path):
+def test_validator_reports_unreadable_reference(tmp_path: Path):
+    reference = tmp_path / "reference-directory"
+    reference.mkdir()
+    path = tmp_path / "config.yaml"
+    path.write_text("simulator: {}\nphysics: {config_path: reference-directory}\nbody: {}\nsensors: {}\nactuators: {}\n", encoding="utf-8")
+    report = ConfigurationValidator().validate(path)
+    assert not report.valid
+    assert any("Unable to read physics configuration" in error for error in report.errors)
+
+
+def test_validator_reports_non_mapping_reference(tmp_path: Path):
+    (tmp_path / "physics.yaml").write_text("[]\n", encoding="utf-8")
+    path = tmp_path / "config.yaml"
+    path.write_text("simulator: {}\nphysics: {config_path: physics.yaml}\nbody: {}\nsensors: {}\nactuators: {}\n", encoding="utf-8")
+    report = ConfigurationValidator().validate(path)
+    assert not report.valid
+    assert any("must contain a mapping" in error for error in report.errors)
+
+
+def test_validator_reports_malformed_reference_yaml(tmp_path: Path):
     path = tmp_path / "missing-reference.yaml"
     path.write_text("simulator: {}\nphysics: {config_path: missing.yaml}\nbody: {}\nsensors: {}\nactuators: {}\n", encoding="utf-8")
     report = ConfigurationValidator().validate(path)

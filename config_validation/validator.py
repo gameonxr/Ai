@@ -46,7 +46,10 @@ class ConfigurationValidator:
             return ValidationReport(str(config_path), False, [f"Configuration not found: {config_path}"])
         try:
             with config_path.open(encoding="utf-8") as handle:
-                config = yaml.safe_load(handle) or {}
+                loaded = yaml.safe_load(handle)
+                config = {} if loaded is None else loaded
+        except OSError as error:
+            return ValidationReport(str(config_path), False, [f"Unable to read configuration: {error}"])
         except yaml.YAMLError as error:
             return ValidationReport(str(config_path), False, [f"Invalid YAML: {error}"])
         if not isinstance(config, dict):
@@ -77,13 +80,16 @@ class ConfigurationValidator:
                 else:
                     try:
                         with referenced.open(encoding="utf-8") as handle:
-                            loaded = yaml.safe_load(handle) or {}
+                            loaded_value = yaml.safe_load(handle)
+                            loaded = {} if loaded_value is None else loaded_value
                         if not isinstance(loaded, dict):
                             errors.append(f"{section}.config_path must contain a mapping: {referenced}")
                         elif section == "body":
                             self._validate_body(loaded, errors)
                         elif section == "actuators":
                             self._validate_actuators(loaded, errors, warnings)
+                    except OSError as error:
+                        errors.append(f"Unable to read {section} configuration: {referenced}: {error}")
                     except yaml.YAMLError as error:
                         errors.append(f"Invalid {section} YAML: {error}")
             elif section != "physics":
