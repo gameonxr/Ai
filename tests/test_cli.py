@@ -45,6 +45,19 @@ def test_cli_rejects_invalid_numeric_arguments():
         assert error.value.code == 2
 
 
+def test_cli_runtime_commands_report_config_errors(capsys, tmp_path: Path):
+    missing = tmp_path / "missing.yaml"
+    for argv, message in (
+        (["benchmark", "--config", str(missing), "--steps", "1"], "Benchmark failed:"),
+        (["evaluate", "--config", str(missing), "--episodes", "1", "--max-steps", "1"], "Evaluation failed:"),
+        (["run", "--config", str(missing), "--episodes", "1", "--max-steps", "1"], "Run failed:"),
+    ):
+        assert main(argv) == 1
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        assert message in captured.err
+
+
 def test_cli_benchmark(capsys):
     assert main(["benchmark", "--steps", "2"]) == 0
     payload = json.loads(capsys.readouterr().out)

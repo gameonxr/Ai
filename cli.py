@@ -115,9 +115,13 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(report.to_dict(), indent=2, sort_keys=True))
         return 0 if report.valid else 1
     if args.command == "benchmark":
-        benchmark_result = run_benchmark(args.config, args.steps, args.seed)
-        if args.json_out:
-            write_json_atomic(benchmark_result.to_artifact_dict(args.config, args.seed), args.json_out)
+        try:
+            benchmark_result = run_benchmark(args.config, args.steps, args.seed)
+            if args.json_out:
+                write_json_atomic(benchmark_result.to_artifact_dict(args.config, args.seed), args.json_out)
+        except (OSError, ValueError) as error:
+            print(f"Benchmark failed: {error}", file=sys.stderr)
+            return 1
         print(json.dumps(benchmark_result.to_dict(), indent=2, sort_keys=True))
         return 0
     if args.command == "health":
@@ -135,16 +139,21 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(summary.to_dict(), indent=2, sort_keys=True))
         return 1 if args.strict and summary.artifact_errors else 0
     if args.command == "evaluate":
-        simulator = Simulator(args.config)
+        simulator = None
         try:
+            simulator = Simulator(args.config)
             policy = RandomTorquePolicy(list(simulator.actuators), seed=args.seed)
             summary = Evaluator(simulator, policy, reward_fn=lambda observation, action: args.reward_per_step).run(args.episodes, args.max_steps, args.seed)
             if args.json_out:
                 write_json_atomic(summary.to_artifact_dict(args.config, args.seed, args.reward_per_step), args.json_out)
-            print(json.dumps(summary.to_dict(), indent=2, sort_keys=True))
-            return 0
+        except (OSError, ValueError) as error:
+            print(f"Evaluation failed: {error}", file=sys.stderr)
+            return 1
         finally:
-            simulator.shutdown()
+            if simulator is not None:
+                simulator.shutdown()
+        print(json.dumps(summary.to_dict(), indent=2, sort_keys=True))
+        return 0
     if args.command == "sweep":
         try:
             result = SweepRunner(args.sweep_id, args.manifest_dir, resume=args.resume).run_file(args.cases)
@@ -155,7 +164,11 @@ def main(argv: list[str] | None = None) -> int:
             result.write_json(args.json_out)
         print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
         return 0
-    manifest = ExperimentRunner(args.config, args.run_id, args.manifest_dir).run(args.episodes, args.max_steps, args.seed, args.checkpoint_every)
+    try:
+        manifest = ExperimentRunner(args.config, args.run_id, args.manifest_dir).run(args.episodes, args.max_steps, args.seed, args.checkpoint_every)
+    except (OSError, ValueError) as error:
+        print(f"Run failed: {error}", file=sys.stderr)
+        return 1
     print(json.dumps({"run_id": manifest.run_id, "status": manifest.status, "episodes_completed": manifest.episodes_completed, "total_steps": manifest.total_steps}, indent=2, sort_keys=True))
     return 0
 
