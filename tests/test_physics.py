@@ -5,6 +5,30 @@ import math
 import pytest
 
 from physics import MuJoCoBackend
+from physics.toy_backend import ToyPhysicsEngine
+
+
+def test_toy_backend_rejects_invalid_reset_seed():
+    body = BodyLoader.load("config/body_humanoid.yaml")
+    engine = ToyPhysicsEngine({})
+    engine.load_body(body)
+    for value in (True, 1.5, "42"):
+        with pytest.raises(ValueError, match="seed must be an integer or null"):
+            engine.reset(value)  # type: ignore[arg-type]
+
+
+def test_toy_backend_rejects_malformed_checkpoint_state():
+    body = BodyLoader.load("config/body_humanoid.yaml")
+    engine = ToyPhysicsEngine({})
+    engine.load_body(body)
+    state = engine.get_checkpoint_state()
+    state["body_velocity"] = [0.0, 0.0, math.nan]
+    with pytest.raises(ValueError, match="body_velocity must be a finite vector"):
+        engine.restore_checkpoint_state(state)
+    state = engine.get_checkpoint_state()
+    state["positions"].pop("neck")
+    with pytest.raises(ValueError, match="positions dof map does not match"):
+        engine.restore_checkpoint_state(state)
 
 
 def test_backend_is_deterministic():

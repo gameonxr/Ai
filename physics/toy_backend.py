@@ -29,6 +29,8 @@ class ToyPhysicsEngine(PhysicsEngine):
         self.body_position[2] = body_definition.height / 2.0
 
     def reset(self, seed=None) -> None:
+        if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
+            raise ValueError("seed must be an integer or null")
         if seed is not None:
             self.rng = np.random.default_rng(seed)
         for name in self.positions:
@@ -81,19 +83,58 @@ class ToyPhysicsEngine(PhysicsEngine):
     def restore_checkpoint_state(self, state: dict) -> None:
         if self.body is None:
             raise RuntimeError("Body must be loaded before restoring a checkpoint")
+        if not isinstance(state, dict):
+            raise ValueError("ToyPhysics checkpoint state must be an object")
         expected = set(self.positions)
-        if set(state.get("positions", {})) != expected:
-            raise ValueError("Checkpoint joint set does not match the loaded body")
-        self.positions = {name: float(value) for name, value in state["positions"].items()}
-        self.velocities = {name: float(value) for name, value in state["velocities"].items()}
-        self.accelerations = {name: float(value) for name, value in state["accelerations"].items()}
-        self.commands = deepcopy(state.get("commands", {}))
-        self.body_position = np.asarray(state["body_position"], dtype=float)
-        self.body_velocity = np.asarray(state["body_velocity"], dtype=float)
-        self.body_rotation = np.asarray(state["body_rotation"], dtype=float)
-        self.body_angular_velocity = np.asarray(state["body_angular_velocity"], dtype=float)
-        self.gravity = np.asarray(state["gravity"], dtype=float)
-        self.time = float(state["time"])
+        restored = {}
+        for field_name in ("positions", "velocities", "accelerations"):
+            values = state.get(field_name)
+            if not isinstance(values, dict) or set(values) != expected:
+                raise ValueError(f"ToyPhysics checkpoint {field_name} dof map does not match the loaded body")
+            try:
+                restored[field_name] = {name: float(value) for name, value in values.items()}
+            except (TypeError, ValueError) as error:
+                raise ValueError(f"ToyPhysics checkpoint {field_name} values must be numeric") from error
+            if not all(np.isfinite(value) for value in restored[field_name].values()):
+                raise ValueError(f"ToyPhysics checkpoint {field_name} values must be finite")
+        commands = state.get("commands", {})
+        if not isinstance(commands, dict):
+            raise ValueError("ToyPhysics checkpoint commands must be an object")
+        for name, command in commands.items():
+            if not isinstance(command, dict):
+                raise ValueError("ToyPhysics checkpoint command values must be objects")
+            if "target" in command:
+                try:
+                    target = float(command["target"])
+                except (TypeError, ValueError) as error:
+                    raise ValueError("ToyPhysics checkpoint command targets must be numeric") from error
+                if not np.isfinite(target):
+                    raise ValueError("ToyPhysics checkpoint command targets must be finite")
+        vectors = {}
+        for field_name, size in (("body_position", 3), ("body_velocity", 3), ("body_rotation", 4), ("body_angular_velocity", 3), ("gravity", 3)):
+            try:
+                vector = np.asarray(state[field_name], dtype=float)
+            except (KeyError, TypeError, ValueError) as error:
+                raise ValueError(f"ToyPhysics checkpoint {field_name} must be a finite vector") from error
+            if vector.shape != (size,) or not np.all(np.isfinite(vector)):
+                raise ValueError(f"ToyPhysics checkpoint {field_name} must be a finite vector of length {size}")
+            vectors[field_name] = vector
+        try:
+            time = float(state["time"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError("ToyPhysics checkpoint time must be a finite non-negative number") from error
+        if not np.isfinite(time) or time < 0:
+            raise ValueError("ToyPhysics checkpoint time must be a finite non-negative number")
+        self.positions = restored["positions"]
+        self.velocities = restored["velocities"]
+        self.accelerations = restored["accelerations"]
+        self.commands = deepcopy(commands)
+        self.body_position = vectors["body_position"]
+        self.body_velocity = vectors["body_velocity"]
+        self.body_rotation = vectors["body_rotation"]
+        self.body_angular_velocity = vectors["body_angular_velocity"]
+        self.gravity = vectors["gravity"]
+        self.time = time
 
     def get_contact_info(self) -> list:
         return [{"position": [float(self.body_position[0]), float(self.body_position[1]), 0.0], "force": [0.0, 0.0, float(self.body.mass * abs(self.gravity[2]))], "object_id": "floor"}] if self.body is not None else []
