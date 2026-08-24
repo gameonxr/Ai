@@ -11,6 +11,13 @@ def test_config_loader_resolves_references():
     assert config["physics"]["loaded"]["physics"]["gravity"][2] == -9.81
 
 
+def test_config_loader_reports_unreadable_root_path(tmp_path: Path):
+    unreadable = tmp_path / "root-directory"
+    unreadable.mkdir()
+    with pytest.raises(FileNotFoundError, match="Unable to read configuration"):
+        ConfigLoader(unreadable).load()
+
+
 def test_config_loader_rejects_malformed_root_yaml(tmp_path: Path):
     path = tmp_path / "invalid.yaml"
     path.write_text("simulator: [\n", encoding="utf-8")
@@ -44,6 +51,15 @@ def test_config_loader_merge_rejects_non_mapping_inputs():
         ConfigLoader.merge([], {})  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="Configuration merge override must be a mapping"):
         ConfigLoader.merge({}, [])  # type: ignore[arg-type]
+
+
+def test_config_loader_reports_unreadable_reference_path(tmp_path: Path):
+    reference = tmp_path / "reference-directory"
+    reference.mkdir()
+    path = tmp_path / "config.yaml"
+    path.write_text("simulator: {}\nphysics: {config_path: reference-directory}\nbody: {}\nsensors: {}\nactuators: {}\n", encoding="utf-8")
+    with pytest.raises(FileNotFoundError, match="Unable to read referenced configuration"):
+        ConfigLoader(path).load()
 
 
 def test_config_loader_rejects_malformed_reference_yaml(tmp_path: Path):

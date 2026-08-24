@@ -18,6 +18,8 @@ class ConfigLoader:
         try:
             with self.config_path.open(encoding="utf-8") as handle:
                 config = yaml.safe_load(handle)
+        except OSError as error:
+            raise FileNotFoundError(f"Unable to read configuration: {self.config_path}: {error}") from error
         except yaml.YAMLError as error:
             raise ValueError(f"Invalid YAML configuration: {self.config_path}") from error
         if config is None:
@@ -40,6 +42,8 @@ class ConfigLoader:
         try:
             with path.open(encoding="utf-8") as handle:
                 config = yaml.safe_load(handle)
+        except OSError as error:
+            raise FileNotFoundError(f"Unable to read referenced configuration: {path}: {error}") from error
         except yaml.YAMLError as error:
             raise ValueError(f"Invalid YAML referenced configuration: {path}") from error
         if config is None:
