@@ -22,6 +22,24 @@ def test_random_torque_policy_validates_constructor_inputs():
             RandomTorquePolicy(joint_names, scale=scale, seed=seed)
 
 
+def test_trainer_rejects_invalid_episode_inputs(tmp_path: Path):
+    simulator = Simulator("config/simulator_config.yaml")
+    trainer = Trainer(simulator, RandomTorquePolicy(["neck"], seed=1))
+    try:
+        invalid_calls = (
+            ("run_episode", {"max_steps": 0}, "max_steps must be a positive integer"),
+            ("run_episode", {"max_steps": True}, "max_steps must be a positive integer"),
+            ("run_episode", {"seed": False}, "seed must be an integer or null"),
+            ("train", {"episodes": 0}, "episodes must be a positive integer"),
+            ("train", {"episodes": 1.5}, "episodes must be a positive integer"),
+        )
+        for method_name, kwargs, message in invalid_calls:
+            with pytest.raises(ValueError, match=message):
+                getattr(trainer, method_name)(**kwargs)
+    finally:
+        trainer.close()
+
+
 def test_random_torque_policy_reset_rejects_invalid_seed():
     policy = RandomTorquePolicy(["neck"], seed=1)
     for value in (True, 1.5, "7"):

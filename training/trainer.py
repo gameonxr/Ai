@@ -32,8 +32,8 @@ class Trainer:
         self.done_fn = done_fn or (lambda observation, step: False)
 
     def run_episode(self, max_steps: int = 1000, seed: int | None = None) -> tuple[Rollout, EpisodeMetrics]:
-        if max_steps < 1:
-            raise ValueError("max_steps must be >= 1")
+        self._validate_positive_int("max_steps", max_steps)
+        self._validate_optional_int("seed", seed)
         rollout = Rollout()
         observation = self.environment.reset(seed)
         terminated = False
@@ -48,13 +48,24 @@ class Trainer:
         return rollout, metrics
 
     def train(self, episodes: int = 1, max_steps: int = 1000, seed: int | None = None) -> list[EpisodeMetrics]:
-        if episodes < 1:
-            raise ValueError("episodes must be >= 1")
+        self._validate_positive_int("episodes", episodes)
+        self._validate_positive_int("max_steps", max_steps)
+        self._validate_optional_int("seed", seed)
         metrics = []
         for episode in range(episodes):
             _, result = self.run_episode(max_steps, None if seed is None else seed + episode)
             metrics.append(EpisodeMetrics(episode, result.steps, result.total_reward, result.terminated))
         return metrics
+
+    @staticmethod
+    def _validate_positive_int(name: str, value: object) -> None:
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            raise ValueError(f"{name} must be a positive integer")
+
+    @staticmethod
+    def _validate_optional_int(name: str, value: object) -> None:
+        if value is not None and (isinstance(value, bool) or not isinstance(value, int)):
+            raise ValueError(f"{name} must be an integer or null")
 
     def close(self) -> None:
         self.environment.close()
