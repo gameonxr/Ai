@@ -72,10 +72,31 @@ def test_vision_sensor_rasterizes_configured_body_projection():
     assert reading["camera"]["projection"] == "orthographic"
 
 
+@pytest.mark.parametrize("config", [{"view_scale": 0.0}, {"view_scale": -1.0}, {"view_scale": True}, {"view_scale": "1.0"}])
+def test_vision_sensor_rejects_invalid_view_scale(config):
+    with pytest.raises(ValueError, match="vision view_scale"):
+        VisionSensor("vision", config)
+
+
+def test_vision_view_scale_changes_frame_coverage():
+    body = BodyLoader.load("config/body_humanoid.yaml")
+    state = {"joint_positions": {name: 0.0 for name in body.joints}}
+    close = VisionSensor("vision", {"resolution": [64, 64], "view_scale": 0.5}, body=body).observe(state)
+    wide = VisionSensor("vision", {"resolution": [64, 64], "view_scale": 2.0}, body=body).observe(state)
+    assert close["camera"]["view_scale"] == 0.5
+    assert wide["camera"]["view_scale"] == 2.0
+    assert close["non_background_pixels"] > wide["non_background_pixels"]
+
+
 def test_vision_sensor_without_body_reports_unavailable_frame():
     reading = VisionSensor("vision").observe({"joint_positions": {}})
     assert reading["available"] is False
     assert reading["non_background_pixels"] == 0
+
+
+def test_depth_sensor_rejects_invalid_view_scale():
+    with pytest.raises(ValueError, match="depth view_scale"):
+        DepthSensor("depth", {"view_scale": 0.0})
 
 
 def test_depth_sensor_rasterizes_body_depth_map():
@@ -97,6 +118,11 @@ def test_depth_sensor_rasterizes_body_depth_map():
 def test_depth_sensor_rejects_invalid_range(config):
     with pytest.raises(ValueError, match="depth near and far"):
         DepthSensor("depth", config)
+
+
+def test_segmentation_sensor_rejects_invalid_view_scale():
+    with pytest.raises(ValueError, match="segmentation view_scale"):
+        SegmentationSensor("segmentation", {"view_scale": 0.0})
 
 
 def test_segmentation_sensor_returns_stable_body_labels():
@@ -121,6 +147,11 @@ def test_segmentation_sensor_without_body_reports_unavailable_map():
     assert reading["available"] is False
     assert reading["valid_pixels"] == 0
     assert reading["segmentation"].max() == 0
+
+
+def test_perception_sensor_rejects_invalid_view_scale():
+    with pytest.raises(ValueError, match="perception view_scale"):
+        PerceptionSensor("perception", {"view_scale": 0.0})
 
 
 def test_perception_sensor_returns_structured_body_summary():

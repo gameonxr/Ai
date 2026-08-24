@@ -1,8 +1,8 @@
 sensors:
   proprioception: {enabled: true, noise_std: 0.0, filter_alpha: 1.0}
-  vision: {enabled: false, resolution: [64, 64], fov: 90.0}
-  depth: {enabled: false, resolution: [64, 64]}
-  segmentation: {enabled: false, resolution: [64, 64]}
-  perception: {enabled: false}
+  vision: {enabled: false, resolution: [64, 64], fov: 90.0, view_scale: 1.0}
+  depth: {enabled: false, resolution: [64, 64], view_scale: 1.0}
+  segmentation: {enabled: false, resolution: [64, 64], view_scale: 1.0}
+  perception: {enabled: false, view_scale: 1.0}
   imu: {enabled: true, noise_std: 0.0, filter_alpha: 1.0}
   touch: {enabled: false}

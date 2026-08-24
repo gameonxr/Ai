@@ -17,7 +17,11 @@ class SegmentationSensor(Sensor):
         resolution = self.config.get("resolution", [64, 64])
         if not isinstance(resolution, (list, tuple)) or len(resolution) != 2 or any(isinstance(value, bool) or not isinstance(value, int) or value < 1 for value in resolution):
             raise ValueError("segmentation resolution must be a pair of positive integers")
+        view_scale = self.config.get("view_scale", 1.0)
+        if isinstance(view_scale, bool) or not isinstance(view_scale, (int, float)) or not np.isfinite(float(view_scale)) or float(view_scale) <= 0:
+            raise ValueError("segmentation view_scale must be a finite positive number")
         self.resolution = (int(resolution[0]), int(resolution[1]))
+        self.view_scale = float(view_scale)
         self.body = body
         self.label_map = {"background": 0, "floor": 1}
         if body is not None:
@@ -30,7 +34,7 @@ class SegmentationSensor(Sensor):
         if self.body is not None:
             points = project_body(self.body, physics_state)
             floor_width = self._floor_width(physics_state)
-            x_half = max(floor_width / 2.0 if floor_width is not None else 1.0, 1.0)
+            x_half = max(floor_width / 2.0 if floor_width is not None else 1.0, 1.0) * self.view_scale
             view_half_height = max(1.0, x_half * self.resolution[1] / self.resolution[0])
             y_min = -0.15
             y_max = y_min + 2.0 * view_half_height
@@ -49,7 +53,7 @@ class SegmentationSensor(Sensor):
             "segmentation": labels,
             "resolution": self.resolution,
             "frame_id": self.frame_id(physics_state),
-            "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": self.resolution},
+            "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": self.resolution, "view_scale": self.view_scale},
             "available": self.body is not None,
             "source": "headless_body_projection" if self.body is not None else "unconfigured_body_projection",
             "label_map": dict(self.label_map),

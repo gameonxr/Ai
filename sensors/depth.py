@@ -22,7 +22,11 @@ class DepthSensor(Sensor):
         far = self.config.get("far", 10.0)
         if not self._finite_positive(near) or not self._finite_positive(far) or float(near) >= float(far):
             raise ValueError("depth near and far must be finite positive numbers with near below far")
+        view_scale = self.config.get("view_scale", 1.0)
+        if not self._finite_positive(view_scale):
+            raise ValueError("depth view_scale must be a finite positive number")
         self.resolution = (int(resolution[0]), int(resolution[1]))
+        self.view_scale = float(view_scale)
         self.near = float(near)
         self.far = float(far)
         self.body = body
@@ -34,7 +38,7 @@ class DepthSensor(Sensor):
         if self.body is not None:
             points = project_body_3d(self.body, physics_state)
             floor_width = self._floor_width(physics_state)
-            x_half = max(floor_width / 2.0 if floor_width is not None else 1.0, 1.0)
+            x_half = max(floor_width / 2.0 if floor_width is not None else 1.0, 1.0) * self.view_scale
             view_half_height = max(1.0, x_half * self.resolution[1] / self.resolution[0])
             z_min = -0.15
             z_max = z_min + 2.0 * view_half_height
@@ -53,7 +57,7 @@ class DepthSensor(Sensor):
             "near": self.near,
             "far": self.far,
             "frame_id": self.frame_id(physics_state),
-            "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": self.resolution, "near": self.near, "far": self.far},
+            "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": self.resolution, "near": self.near, "far": self.far, "view_scale": self.view_scale},
             "available": self.body is not None,
             "source": "headless_body_projection" if self.body is not None else "unconfigured_body_projection",
             "valid_pixels": int(np.count_nonzero(depth < self.far)),
