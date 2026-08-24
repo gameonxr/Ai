@@ -1,4 +1,8 @@
 import math
+
+import pytest
+
+
 from actuators.actuator_registry import build_actuators
 from body import BodyLoader
 from core import Action
@@ -8,6 +12,15 @@ from core.validator import ActionValidator
 def validator():
     body = BodyLoader.load("config/body_humanoid.yaml")
     return ActionValidator(build_actuators(body.joints, {"defaults": {}})), body
+
+
+def test_actuator_registry_rejects_malformed_configuration():
+    with pytest.raises(ValueError, match="actuator configuration must be an object"):
+        build_actuators({}, [])  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="actuator defaults must be an object"):
+        build_actuators({}, {"defaults": []})  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="control_mode must be"):
+        build_actuators({}, {"control_mode": "velocity"})
 
 
 def test_unknown_and_nan_commands_are_rejected():
