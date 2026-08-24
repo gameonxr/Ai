@@ -45,6 +45,15 @@ def test_toy_backend_rejects_malformed_checkpoint_state():
         engine.restore_checkpoint_state(state)
 
 
+def test_toy_backend_rejects_invalid_checkpoint_command_mode():
+    engine = ToyPhysicsEngine({})
+    engine.load_body(BodyLoader.load("config/body_humanoid.yaml"))
+    state = engine.get_checkpoint_state()
+    state["commands"] = {"neck": {"target": 1.0, "mode": "velocity"}}
+    with pytest.raises(ValueError, match="checkpoint command modes must be torque or position"):
+        engine.restore_checkpoint_state(state)
+
+
 def test_mujoco_xml_uses_configured_gravity():
     body = BodyLoader.load("config/body_humanoid.yaml")
     backend = MuJoCoBackend({"gravity": [1.0, 2.0, -3.5]})

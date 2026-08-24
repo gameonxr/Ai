@@ -119,6 +119,8 @@ class ToyPhysicsEngine(PhysicsEngine):
         for name, command in commands.items():
             if not isinstance(command, dict):
                 raise ValueError("ToyPhysics checkpoint command values must be objects")
+            if command.get("mode", "torque") not in {"torque", "position"}:
+                raise ValueError("ToyPhysics checkpoint command modes must be torque or position")
             if "target" in command:
                 try:
                     target = float(command["target"])
