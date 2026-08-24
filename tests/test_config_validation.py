@@ -11,6 +11,18 @@ def test_canonical_simulator_config_is_valid():
     assert report.valid, report.errors
 
 
+@pytest.mark.parametrize("value", [True, "0.01"])
+def test_validator_rejects_coerced_timestep_values(tmp_path: Path, value):
+    path = tmp_path / "coerced-timestep.yaml"
+    path.write_text(
+        f"simulator: {{timestep: {value!r}}}\nphysics: {{}}\nbody: {{}}\nsensors: {{}}\nactuators: {{}}\n",
+        encoding="utf-8",
+    )
+    report = ConfigurationValidator().validate(path)
+    assert not report.valid
+    assert "simulator.timestep and max_timestep must be numeric" in report.errors
+
+
 def test_validator_reports_missing_section(tmp_path: Path):
     path = tmp_path / "missing.yaml"
     path.write_text("simulator: {timestep: 0.01}\n", encoding="utf-8")

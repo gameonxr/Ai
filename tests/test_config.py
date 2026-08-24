@@ -46,6 +46,14 @@ def test_config_loader_rejects_non_numeric_timestep(tmp_path: Path):
         ConfigLoader(path).load()
 
 
+@pytest.mark.parametrize("value", [True, "0.01"])
+def test_config_loader_rejects_coerced_timestep_values(tmp_path: Path, value):
+    path = tmp_path / "coerced-timestep.yaml"
+    path.write_text(f"simulator: {{timestep: {value!r}}}\nphysics: {{}}\nbody: {{}}\nsensors: {{}}\nactuators: {{}}\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="simulator timestep values must be numeric"):
+        ConfigLoader(path).load()
+
+
 def test_config_loader_merge_rejects_non_mapping_inputs():
     with pytest.raises(ValueError, match="Configuration merge base must be a mapping"):
         ConfigLoader.merge([], {})  # type: ignore[arg-type]

@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any
 import copy
+import math
 import yaml
 
 
@@ -61,12 +62,18 @@ class ConfigLoader:
         invalid_sections = [name for name in self.REQUIRED_SECTIONS if not isinstance(config[name], dict)]
         if invalid_sections:
             raise ValueError(f"Configuration sections must be mappings: {', '.join(invalid_sections)}")
-        try:
-            timestep = float(config["simulator"].get("timestep", 0.005))
-            max_timestep = float(config["simulator"].get("max_timestep", 0.1))
-        except (TypeError, ValueError) as error:
-            raise ValueError("simulator timestep values must be numeric") from error
-        if not 0 < timestep <= max_timestep:
+        raw_timestep = config["simulator"].get("timestep", 0.005)
+        raw_max_timestep = config["simulator"].get("max_timestep", 0.1)
+        if (
+            isinstance(raw_timestep, bool)
+            or not isinstance(raw_timestep, (int, float))
+            or isinstance(raw_max_timestep, bool)
+            or not isinstance(raw_max_timestep, (int, float))
+        ):
+            raise ValueError("simulator timestep values must be numeric")
+        timestep = float(raw_timestep)
+        max_timestep = float(raw_max_timestep)
+        if not math.isfinite(timestep) or not math.isfinite(max_timestep) or not 0 < timestep <= max_timestep:
             raise ValueError("simulator.timestep must be positive and <= max_timestep")
 
     @staticmethod

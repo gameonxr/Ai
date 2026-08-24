@@ -15,6 +15,10 @@ def _is_finite_number(value: Any) -> bool:
         return False
 
 
+def _is_strict_finite_number(value: Any) -> bool:
+    return not isinstance(value, bool) and isinstance(value, (int, float)) and math.isfinite(float(value))
+
+
 def _is_positive_number(value: Any) -> bool:
     return _is_finite_number(value) and float(value) > 0
 
@@ -58,13 +62,12 @@ class ConfigurationValidator:
         errors.extend(f"Missing required section: {section}" for section in missing)
         simulator = config.get("simulator", {})
         if isinstance(simulator, dict):
-            try:
-                timestep = float(simulator.get("timestep", 0.005))
-                max_timestep = float(simulator.get("max_timestep", 0.1))
-                if not 0 < timestep <= max_timestep:
-                    errors.append("simulator.timestep must be positive and <= max_timestep")
-            except (TypeError, ValueError):
+            raw_timestep = simulator.get("timestep", 0.005)
+            raw_max_timestep = simulator.get("max_timestep", 0.1)
+            if not _is_strict_finite_number(raw_timestep) or not _is_strict_finite_number(raw_max_timestep):
                 errors.append("simulator.timestep and max_timestep must be numeric")
+            elif not 0 < float(raw_timestep) <= float(raw_max_timestep):
+                errors.append("simulator.timestep must be positive and <= max_timestep")
         for section in self.REFERENCED_SECTIONS:
             value = config.get(section)
             if not isinstance(value, dict):
