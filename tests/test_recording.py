@@ -6,6 +6,12 @@ from core import Action, Observation
 from recording import EpisodeRecorder, ReplayBrain
 
 
+@pytest.mark.parametrize("metadata", [[], "invalid"])
+def test_recording_rejects_non_object_metadata(metadata):
+    with pytest.raises(ValueError, match="Episode recording metadata must be a JSON object"):
+        EpisodeRecorder(metadata)
+
+
 def test_recording_rejects_non_mapping_info():
     recorder = EpisodeRecorder()
     with pytest.raises(ValueError, match="info must be a mapping"):

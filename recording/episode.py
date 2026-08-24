@@ -23,6 +23,8 @@ class EpisodeRecorder:
     """Capture standardized observations/actions without touching simulator internals."""
 
     def __init__(self, metadata: dict[str, Any] | None = None):
+        if metadata is not None and not isinstance(metadata, dict):
+            raise ValueError("Episode recording metadata must be a JSON object")
         self.metadata = metadata or {}
         self.transitions: list[RecordedTransition] = []
 

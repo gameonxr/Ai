@@ -24,6 +24,8 @@ class TrajectoryDatasetWriter:
     SCHEMA_VERSION = 1
 
     def __init__(self, path: str | Path, metadata: dict[str, Any] | None = None):
+        if metadata is not None and not isinstance(metadata, dict):
+            raise ValueError("Trajectory dataset metadata must be a JSON object")
         self.path = Path(path)
         self.metadata = metadata or {}
         self._handle = None

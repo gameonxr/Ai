@@ -7,6 +7,12 @@ from datasets import TrajectoryDatasetWriter, load_dataset
 from simulator import Simulator
 
 
+@pytest.mark.parametrize("metadata", [[], "invalid"])
+def test_trajectory_writer_rejects_non_object_metadata(tmp_path: Path, metadata):
+    with pytest.raises(ValueError, match="Trajectory dataset metadata must be a JSON object"):
+        TrajectoryDatasetWriter(tmp_path / "trajectory.jsonl", metadata)
+
+
 def test_trajectory_dataset_round_trip(tmp_path: Path):
     path = tmp_path / "trajectory.jsonl"
     simulator = Simulator("config/simulator_config.yaml")
