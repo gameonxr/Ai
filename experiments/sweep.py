@@ -133,8 +133,20 @@ class SweepRunner:
             payload = json.loads(path.read_text(encoding="utf-8"))
             if not isinstance(payload, dict):
                 raise ValueError("manifest payload must be an object")
-            payload.setdefault("artifact_type", "experiment_manifest")
-            payload.setdefault("schema_version", 1)
+            if payload.setdefault("artifact_type", "experiment_manifest") != "experiment_manifest":
+                raise ValueError("unsupported manifest artifact type")
+            schema_version = int(payload.setdefault("schema_version", 1))
+            if schema_version != 1:
+                raise ValueError("unsupported manifest schema version")
+            payload["schema_version"] = schema_version
+            required_fields = ("run_id", "status", "started_at", "finished_at", "config_path", "episodes_requested", "episodes_completed", "total_steps")
+            missing_fields = [field for field in required_fields if field not in payload]
+            if missing_fields:
+                raise ValueError(f"manifest missing required fields: {', '.join(missing_fields)}")
+            if not isinstance(payload.get("metrics", []), list):
+                raise ValueError("manifest metrics must be a list")
+            if not isinstance(payload.get("metadata", {}), dict):
+                raise ValueError("manifest metadata must be an object")
             return RunManifest(**payload)
         except (OSError, TypeError, ValueError, json.JSONDecodeError) as error:
             raise ValueError(f"invalid existing manifest: {path}") from error

@@ -111,6 +111,29 @@ def test_experiment_manifest_has_artifact_taxonomy(tmp_path: Path):
     assert payload["schema_version"] == 1
 
 
+def test_sweep_loader_rejects_invalid_manifest_schema(tmp_path: Path):
+    base = {
+        "run_id": "invalid",
+        "status": "completed",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "finished_at": "2026-01-01T00:00:01+00:00",
+        "config_path": "config/simulator_config.yaml",
+        "episodes_requested": 1,
+        "episodes_completed": 1,
+        "total_steps": 1,
+        "metrics": [],
+    }
+    wrong_type = tmp_path / "wrong-type.json"
+    wrong_type.write_text(json.dumps({**base, "artifact_type": "evaluation"}), encoding="utf-8")
+    with pytest.raises(ValueError, match="invalid existing manifest"):
+        SweepRunner("strict", tmp_path)._load_manifest(wrong_type)
+
+    missing = tmp_path / "missing-required.json"
+    missing.write_text(json.dumps({"status": "completed"}), encoding="utf-8")
+    with pytest.raises(ValueError, match="invalid existing manifest"):
+        SweepRunner("strict", tmp_path)._load_manifest(missing)
+
+
 def test_sweep_loader_migrates_legacy_manifest(tmp_path: Path):
     legacy_path = tmp_path / "legacy.json"
     legacy_path.write_text(json.dumps({
