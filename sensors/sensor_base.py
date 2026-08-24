@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+import math
+
 
 
 class Sensor(ABC):
@@ -16,6 +18,15 @@ class Sensor(ABC):
 
     @abstractmethod
     def observe(self, physics_state: dict) -> dict: ...
+
+    @staticmethod
+    def frame_id(physics_state: dict) -> float:
+        if not isinstance(physics_state, dict):
+            raise ValueError("physics_state must be an object")
+        value = physics_state.get("time", 0.0)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+            raise ValueError("physics_state time must be a finite number")
+        return float(value)
 
     def reset(self) -> None:
         return None

@@ -66,6 +66,8 @@ def test_vision_sensor_rasterizes_configured_body_projection():
     assert reading["rgb"].dtype.name == "uint8"
     assert reading["non_background_pixels"] > 0
     assert reading["source"] == "headless_body_projection"
+    assert reading["frame_id"] == 0.0
+    assert reading["camera"]["projection"] == "orthographic"
 
 
 def test_vision_sensor_without_body_reports_unavailable_frame():
@@ -85,6 +87,8 @@ def test_depth_sensor_rasterizes_body_depth_map():
     assert reading["valid_pixels"] > 0
     assert reading["depth"].max() == 10.0
     assert reading["depth"].min() < 10.0
+    assert reading["frame_id"] == 0.0
+    assert reading["camera"]["near"] == 0.1
 
 
 @pytest.mark.parametrize("config", [{"near": 0.0}, {"far": 0.0}, {"near": 2.0, "far": 1.0}, {"near": "0.1"}])
@@ -106,6 +110,8 @@ def test_segmentation_sensor_returns_stable_body_labels():
     assert reading["label_map"]["torso"] >= 2
     assert reading["valid_pixels"] > 0
     assert set(reading["segmentation"].flat) <= set(reading["label_map"].values())
+    assert reading["frame_id"] == 0.0
+    assert reading["camera"]["coordinate_frame"] == "body_debug"
 
 
 def test_segmentation_sensor_without_body_reports_unavailable_map():
@@ -127,6 +133,15 @@ def test_perception_sensor_returns_structured_body_summary():
     assert reading["link_positions"]["torso"]["visible"] is True
     assert reading["body_bounds"]["min"][2] <= reading["body_bounds"]["max"][2]
     assert reading["world_objects"] == [{"type": "floor", "visible": True}]
+    assert reading["frame_id"] == 0.0
+    assert reading["camera"]["projection"] == "orthographic"
+
+
+def test_visual_sensors_share_frame_id_for_sensor_fusion():
+    body = BodyLoader.load("config/body_humanoid.yaml")
+    state = {"time": 1.25, "joint_positions": {name: 0.0 for name in body.joints}, "world": {"floor_enabled": True, "objects": [{"type": "floor", "size": (4.0, 6.0)}]}}
+    readings = [sensor.observe(state) for sensor in (VisionSensor("vision", body=body), DepthSensor("depth", body=body), SegmentationSensor("segmentation", body=body), PerceptionSensor("perception", body=body))]
+    assert {reading["frame_id"] for reading in readings} == {1.25}
 
 
 def test_perception_sensor_without_body_reports_unavailable_summary():

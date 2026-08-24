@@ -59,6 +59,8 @@ class VisionSensor(Sensor):
             "rgb": frame,
             "resolution": self.resolution,
             "fov": self.fov,
+            "frame_id": self.frame_id(physics_state),
+            "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": self.resolution, "fov": self.fov},
             "available": self.body is not None,
             "source": "headless_body_projection" if self.body is not None else "unconfigured_body_projection",
             "non_background_pixels": non_background_pixels,

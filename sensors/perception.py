@@ -21,6 +21,8 @@ class PerceptionSensor(Sensor):
             return {
                 "available": False,
                 "source": "unconfigured_body_projection",
+                "frame_id": self.frame_id(physics_state),
+                "camera": {"projection": "orthographic", "coordinate_frame": "body_debug"},
                 "visible_links": [],
                 "link_positions": {},
                 "body_bounds": None,
@@ -49,6 +51,8 @@ class PerceptionSensor(Sensor):
         return {
             "available": True,
             "source": "headless_body_projection",
+            "frame_id": self.frame_id(physics_state),
+            "camera": {"projection": "orthographic", "coordinate_frame": "body_debug"},
             "visible_links": list(points),
             "link_positions": link_positions,
             "body_bounds": bounds,

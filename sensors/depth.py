@@ -52,6 +52,8 @@ class DepthSensor(Sensor):
             "resolution": self.resolution,
             "near": self.near,
             "far": self.far,
+            "frame_id": self.frame_id(physics_state),
+            "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": self.resolution, "near": self.near, "far": self.far},
             "available": self.body is not None,
             "source": "headless_body_projection" if self.body is not None else "unconfigured_body_projection",
             "valid_pixels": int(np.count_nonzero(depth < self.far)),
