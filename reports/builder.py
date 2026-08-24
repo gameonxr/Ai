@@ -21,6 +21,15 @@ def _finite_float(value: Any) -> float:
     return numeric
 
 
+def _nonnegative_int(value: Any) -> int:
+    if isinstance(value, bool):
+        raise ValueError("integer value must be non-negative")
+    numeric = float(value)
+    if not math.isfinite(numeric) or numeric < 0 or not numeric.is_integer():
+        raise ValueError("integer value must be non-negative")
+    return int(numeric)
+
+
 @dataclass
 class ReportSummary:
     manifest_count: int
@@ -72,9 +81,15 @@ class ReportBuilder:
                 continue
             try:
                 if artifact_type == "evaluation":
-                    _finite_float(payload.get("mean_reward", 0.0))
+                    for field in ("mean_reward", "mean_steps"):
+                        _finite_float(payload.get(field, 0.0))
+                    for field in ("episodes", "total_steps"):
+                        _nonnegative_int(payload.get(field, 0))
                 elif artifact_type == "benchmark":
+                    _finite_float(payload.get("simulation_seconds", 0.0))
+                    _finite_float(payload.get("wall_seconds", 0.0))
                     _finite_float(payload.get("realtime_factor", 0.0))
+                    _nonnegative_int(payload.get("steps", 0))
                 elif artifact_type not in {"evaluation", "benchmark", "health", "sweep", "checkpoint", "report"} and "status" in payload:
                     metrics = payload.get("metrics", [])
                     if not isinstance(metrics, list):

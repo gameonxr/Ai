@@ -118,11 +118,21 @@ def test_report_builder_skips_malformed_numeric_artifacts(tmp_path: Path):
         "status": "completed",
         "metrics": {"not": "a-list"},
     }), encoding="utf-8")
+    (tmp_path / "bad-evaluation-steps.json").write_text(json.dumps({
+        "artifact_type": "evaluation",
+        "schema_version": 1,
+        "episodes": 1.5,
+    }), encoding="utf-8")
+    (tmp_path / "bad-benchmark-duration.json").write_text(json.dumps({
+        "artifact_type": "benchmark",
+        "schema_version": 1,
+        "wall_seconds": "not-a-number",
+    }), encoding="utf-8")
     summary = ReportBuilder().build(tmp_path)
     assert summary.evaluation_count == 0
     assert summary.benchmark_count == 0
     assert summary.manifest_count == 0
-    assert len(summary.artifact_errors) == 3
+    assert len(summary.artifact_errors) == 5
 
 
 def test_report_builder_records_malformed_artifacts_without_failing(tmp_path: Path):
