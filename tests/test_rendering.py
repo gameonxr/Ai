@@ -5,8 +5,39 @@ import pytest
 from body import BodyLoader
 from environment import World
 from physics import MuJoCoBackend
-from rendering import MatplotlibRenderer
+from rendering import Matplotlib3DRenderer, MatplotlibRenderer, create_renderer
 from rendering.kinematics import project_body
+from rendering.matplotlib_3d_renderer import project_body_3d
+
+
+def test_3d_projection_and_renderer_honor_world_floor():
+    body = BodyLoader.load("config/body_humanoid.yaml")
+    engine = MuJoCoBackend({})
+    engine.load_body(body)
+    state = engine.get_body_state()
+    state["world"] = World([0, 0, -9.81], floor_size=[4, 6]).definition()
+
+    points = project_body_3d(body, state)
+    assert points["torso"] == (0.0, 0.0, 1.0)
+    assert set(body.links) <= set(points)
+
+    renderer = Matplotlib3DRenderer({"label_links": True})
+    figure = renderer.render(body, state)
+    assert figure.axes[0].name == "3d"
+    assert any(collection.__class__.__name__ == "Poly3DCollection" for collection in figure.axes[0].collections)
+    assert len(figure.axes[0].lines) == body.dof
+    renderer.close()
+
+    state["world"] = World([0, 0, -9.81], floor_enabled=False).definition()
+    hidden_figure = renderer.render(body, state)
+    assert not any(collection.__class__.__name__ == "Poly3DCollection" for collection in hidden_figure.axes[0].collections)
+    renderer.close()
+    engine.shutdown()
+
+
+def test_3d_renderer_is_registered_without_changing_2d_default():
+    assert isinstance(create_renderer("3d"), Matplotlib3DRenderer)
+    assert isinstance(create_renderer("matplotlib"), MatplotlibRenderer)
 
 
 def test_renderer_auto_scales_to_body_points():
