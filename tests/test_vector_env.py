@@ -15,6 +15,29 @@ def test_vectorized_reset_and_step():
     vector.close()
 
 
+def test_vectorized_parallel_mode_preserves_order_and_results():
+    sequential = VectorizedSimulator("config/simulator_config.yaml", num_envs=2)
+    parallel = VectorizedSimulator("config/simulator_config.yaml", num_envs=2, parallel=True)
+    try:
+        assert sequential.parallel is False and parallel.parallel is True
+        assert [item.to_dict() for item in sequential.reset(seed=30)] == [item.to_dict() for item in parallel.reset(seed=30)]
+        actions = [Action(joint_targets={"neck": 0.1}), Action(joint_targets={"neck": -0.1})]
+        assert [item.to_dict() for item in sequential.step(actions)] == [item.to_dict() for item in parallel.step(actions)]
+        for sequential_state, parallel_state in zip(sequential.get_states(), parallel.get_states()):
+            assert sequential_state["current_time"] == parallel_state["current_time"]
+            assert sequential_state["step_count"] == parallel_state["step_count"]
+            assert sequential_state["physics_state"] == parallel_state["physics_state"]
+    finally:
+        sequential.close()
+        parallel.close()
+
+
+def test_vectorized_parallel_flag_requires_boolean():
+    for value in (1, 0, "true"):
+        with pytest.raises(ValueError, match="parallel must be a boolean"):
+            VectorizedSimulator("config/simulator_config.yaml", num_envs=1, parallel=value)  # type: ignore[arg-type]
+
+
 def test_vectorized_close_is_idempotent_and_guards_operations():
     vector = VectorizedSimulator("config/simulator_config.yaml", num_envs=1)
     vector.reset(seed=2)
