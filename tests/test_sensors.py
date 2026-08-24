@@ -4,6 +4,7 @@ import math
 import pytest
 
 from body import BodyLoader
+from sensors.depth import DepthSensor
 from sensors.imu import IMUSensor
 from sensors.proprioception import ProprioceptionSensor
 from sensors.sensor_registry import build_sensors
@@ -69,6 +70,25 @@ def test_vision_sensor_without_body_reports_unavailable_frame():
     reading = VisionSensor("vision").observe({"joint_positions": {}})
     assert reading["available"] is False
     assert reading["non_background_pixels"] == 0
+
+
+def test_depth_sensor_rasterizes_body_depth_map():
+    body = BodyLoader.load("config/body_humanoid.yaml")
+    sensor = DepthSensor("depth", {"resolution": [32, 24], "near": 0.1, "far": 10.0}, body=body)
+    state = {"joint_positions": {name: 0.0 for name in body.joints}, "world": {"floor_enabled": True, "objects": [{"type": "floor", "size": (4.0, 6.0)}]}}
+    reading = sensor.observe(state)
+    assert reading["available"] is True
+    assert reading["depth"].shape == (24, 32)
+    assert reading["depth"].dtype.name == "float32"
+    assert reading["valid_pixels"] > 0
+    assert reading["depth"].max() == 10.0
+    assert reading["depth"].min() < 10.0
+
+
+@pytest.mark.parametrize("config", [{"near": 0.0}, {"far": 0.0}, {"near": 2.0, "far": 1.0}, {"near": "0.1"}])
+def test_depth_sensor_rejects_invalid_range(config):
+    with pytest.raises(ValueError, match="depth near and far"):
+        DepthSensor("depth", config)
 
 
 def test_sensor_base_rejects_malformed_constructor_inputs():
