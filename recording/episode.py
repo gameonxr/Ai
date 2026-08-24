@@ -30,9 +30,20 @@ class EpisodeRecorder:
         self.transitions: list[RecordedTransition] = []
 
     def record(self, observation: Observation, action: Action, reward: float = 0.0, done: bool = False, info: dict | None = None) -> None:
+        if not isinstance(observation, Observation):
+            raise TypeError("observation must be an Observation")
+        if not isinstance(action, Action):
+            raise TypeError("action must be an Action")
+        if isinstance(reward, bool) or not isinstance(reward, (int, float)):
+            raise ValueError("reward must be numeric")
+        reward = float(reward)
+        if not math.isfinite(reward):
+            raise ValueError("reward must be finite")
+        if not isinstance(done, bool):
+            raise ValueError("done must be a boolean")
         if info is not None and not isinstance(info, dict):
             raise ValueError("info must be a mapping when provided")
-        self.transitions.append(RecordedTransition(observation.to_dict(), action.to_dict(), float(reward), bool(done), info or {}))
+        self.transitions.append(RecordedTransition(observation.to_dict(), action.to_dict(), reward, done, info or {}))
 
     def save_jsonl(self, path: str | Path) -> None:
         lines = [json.dumps({"type": "metadata", "metadata": self.metadata}, sort_keys=True)]

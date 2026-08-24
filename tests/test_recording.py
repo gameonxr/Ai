@@ -12,10 +12,28 @@ def test_recording_rejects_non_object_metadata(metadata):
         EpisodeRecorder(metadata)
 
 
+@pytest.mark.parametrize(
+    ("value", "field", "message"),
+    [
+        (None, "observation", "observation must be an Observation"),
+        (None, "action", "action must be an Action"),
+        (True, "reward", "reward must be numeric"),
+        (float("nan"), "reward", "reward must be finite"),
+        (1, "done", "done must be a boolean"),
+    ],
+)
+def test_recording_rejects_invalid_transition_values(value, field, message):
+    recorder = EpisodeRecorder()
+    kwargs = {"observation": Observation(0.0), "action": Action.noop(), "reward": 0.0, "done": False}
+    kwargs[field] = value
+    with pytest.raises((TypeError, ValueError), match=message):
+        recorder.record(**kwargs)
+
+
 def test_recording_rejects_non_mapping_info():
     recorder = EpisodeRecorder()
     with pytest.raises(ValueError, match="info must be a mapping"):
-        recorder.record(None, None, info=["not", "a", "mapping"])
+        recorder.record(Observation(0.0), Action.noop(), info=["not", "a", "mapping"])
 
 
 def test_recording_round_trip(tmp_path: Path):
