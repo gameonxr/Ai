@@ -1,5 +1,8 @@
 from pathlib import Path
 
+import pytest
+import yaml
+
 from config_validation import ConfigurationValidator
 
 
@@ -89,6 +92,27 @@ def test_validator_reports_body_and_actuator_semantic_errors(tmp_path: Path):
     assert any("control_mode must be torque or position" in error for error in report.errors)
     assert any("max_torque must be positive" in error for error in report.errors)
     assert any("response_time" in error for error in report.errors)
+
+
+@pytest.mark.parametrize(
+    ("environment", "message"),
+    [
+        ([], "environment must be a mapping when provided"),
+        ({"floor_enabled": "false"}, "environment.floor_enabled must be a boolean"),
+        ({"floor_friction": True}, "environment.floor_friction must be a finite non-negative number"),
+        ({"floor_size": [10]}, "environment.floor_size must be a finite positive 2-vector"),
+    ],
+)
+def test_validator_reports_invalid_environment_values(tmp_path: Path, environment, message):
+    config = tmp_path / "environment-invalid.yaml"
+    config.write_text(
+        "simulator: {}\nphysics: {}\nbody: {}\nsensors: {}\nactuators: {}\n"
+        + yaml.safe_dump({"environment": environment}),
+        encoding="utf-8",
+    )
+    report = ConfigurationValidator().validate(config)
+    assert not report.valid
+    assert message in report.errors
 
 
 def test_validator_reports_unknown_initial_joint(tmp_path: Path):

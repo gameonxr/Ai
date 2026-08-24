@@ -94,6 +94,9 @@ class ConfigurationValidator:
                         errors.append(f"Invalid {section} YAML: {error}")
             elif section != "physics":
                 warnings.append(f"{section}.config_path is not set; inline defaults will be used")
+        environment = config.get("environment")
+        if environment is not None:
+            self._validate_environment(environment, errors)
         logging_cfg = config.get("logging")
         if logging_cfg is not None and not isinstance(logging_cfg, dict):
             errors.append("logging must be a mapping when provided")
@@ -139,6 +142,27 @@ class ConfigurationValidator:
                     errors.append(f"body.initial_state.joint_positions references unknown joint: {joint_name}")
                 elif not _is_finite_number(position):
                     errors.append(f"body.initial_state.joint_positions.{joint_name} must be finite")
+
+    @staticmethod
+    def _validate_environment(environment: Any, errors: list[str]) -> None:
+        if not isinstance(environment, dict):
+            errors.append("environment must be a mapping when provided")
+            return
+        if "floor_enabled" in environment and not isinstance(environment["floor_enabled"], bool):
+            errors.append("environment.floor_enabled must be a boolean")
+        if "floor_friction" in environment and (
+            isinstance(environment["floor_friction"], bool)
+            or not _is_nonnegative_number(environment["floor_friction"])
+        ):
+            errors.append("environment.floor_friction must be a finite non-negative number")
+        if "floor_size" in environment:
+            floor_size = environment["floor_size"]
+            if (
+                not isinstance(floor_size, (list, tuple))
+                or len(floor_size) != 2
+                or not all(_is_finite_number(value) and float(value) > 0 for value in floor_size)
+            ):
+                errors.append("environment.floor_size must be a finite positive 2-vector")
 
     @staticmethod
     def _validate_actuators(actuator_config: dict[str, Any], errors: list[str], warnings: list[str]) -> None:
