@@ -119,6 +119,16 @@ class ReportBuilder:
                         raise ValueError("checkpoint state and metrics must be objects")
                     if not isinstance(payload.get("metadata", {}), dict):
                         raise ValueError("checkpoint metadata must be an object")
+                elif artifact_type == "report":
+                    for field in ("manifest_count", "completed_runs", "failed_runs", "total_episodes", "total_steps", "evaluation_count", "benchmark_count", "health_count", "healthy_count", "sweep_count", "checkpoint_count"):
+                        _nonnegative_int(payload.get(field, 0))
+                    for field in ("mean_reward", "mean_steps_per_episode", "mean_evaluation_reward", "mean_realtime_factor"):
+                        _finite_float(payload.get(field, 0.0))
+                    for field in ("runs", "evaluations", "benchmarks", "health_reports", "sweeps", "checkpoints", "artifact_errors"):
+                        if not isinstance(payload.get(field, []), list):
+                            raise ValueError(f"report {field} must be a list")
+                    if any(not isinstance(error, str) for error in payload.get("artifact_errors", [])):
+                        raise ValueError("report artifact_errors must contain strings")
                 elif artifact_type not in {"evaluation", "benchmark", "health", "sweep", "checkpoint", "report"} and "status" in payload:
                     if payload["status"] not in {"running", "completed", "failed"}:
                         raise ValueError("manifest status must be recognized")
