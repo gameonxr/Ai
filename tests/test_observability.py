@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from brain import DummyBrain
 from observability import SimulationMetrics
 from simulator import Simulator
@@ -31,6 +33,19 @@ def test_metrics_restore_snapshot_restores_counters_only():
     assert snapshot["episodes"] == 4
     assert snapshot["simulation_seconds"] == 0.04
     assert snapshot["wall_seconds"] < 999.0
+
+
+def test_metrics_restore_snapshot_rejects_invalid_values():
+    metrics = SimulationMetrics()
+    invalid = [
+        ([], "Metrics snapshot must be an object"),
+        ({"steps": -1}, "Metrics steps must be a non-negative integer"),
+        ({"actions": True}, "Metrics actions must be a non-negative integer"),
+        ({"simulation_seconds": float("nan")}, "Metrics simulation_seconds must be a finite non-negative number"),
+    ]
+    for snapshot, message in invalid:
+        with pytest.raises(ValueError, match=message):
+            metrics.restore_snapshot(snapshot)
 
 
 def test_simulator_exposes_metrics_and_writes_json_logs():
