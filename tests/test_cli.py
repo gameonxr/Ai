@@ -79,6 +79,21 @@ def test_cli_sweep_reports_cases_file_errors(capsys, tmp_path: Path):
     assert "Sweep failed: Unable to read sweep cases" in captured.err
 
 
+def test_cli_sweep_reports_output_write_errors(capsys, tmp_path: Path, monkeypatch):
+    class StubResult:
+        def write_json(self, _path):
+            raise IsADirectoryError("output target is a directory")
+
+        def to_dict(self):
+            return {}
+
+    monkeypatch.setattr("cli.SweepRunner.run_file", lambda _self, _path: StubResult())
+    assert main(["sweep", "--cases", "ignored.json", "--json-out", str(tmp_path)]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "Sweep failed: output target is a directory" in captured.err
+
+
 def test_cli_run(capsys, tmp_path: Path):
     assert main(["run", "--run-id", "cli-test", "--manifest-dir", str(tmp_path), "--episodes", "1", "--max-steps", "2"]) == 0
     payload = json.loads(capsys.readouterr().out)
