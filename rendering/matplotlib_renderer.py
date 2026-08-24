@@ -14,9 +14,9 @@ class MatplotlibRenderer(Renderer):
 
     def __init__(self, config: dict | None = None):
         self.config = config or {}
-        self.width = int(self.config.get("width", 640))
-        self.height = int(self.config.get("height", 640))
-        self.dpi = int(self.config.get("dpi", 100))
+        self.width = self._positive_int(self.config.get("width", 640), "width")
+        self.height = self._positive_int(self.config.get("height", 640), "height")
+        self.dpi = self._positive_int(self.config.get("dpi", 100), "dpi")
         self.show_axes = bool(self.config.get("show_axes", True))
         self.auto_scale = bool(self.config.get("auto_scale", True))
         self.padding = float(self.config.get("padding", 0.15))
@@ -65,6 +65,12 @@ class MatplotlibRenderer(Renderer):
             figure.savefig(output, format=output.suffix.lstrip(".") or "png")
         self.last_figure = figure
         return figure
+
+    @staticmethod
+    def _positive_int(value: Any, name: str) -> int:
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            raise ValueError(f"Renderer {name} must be a positive integer")
+        return value
 
     def _set_auto_limits(self, axis, x_values: list[float], y_values: list[float]) -> None:
         def limits(values: list[float]) -> tuple[float, float]:

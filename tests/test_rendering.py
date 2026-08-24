@@ -37,6 +37,13 @@ def test_renderer_draws_optional_ground_reference():
     engine.shutdown()
 
 
+@pytest.mark.parametrize("dimension", ["width", "height", "dpi"])
+@pytest.mark.parametrize("value", [0, -1, 1.5, True])
+def test_renderer_rejects_invalid_dimensions(dimension, value):
+    with pytest.raises(ValueError, match=f"Renderer {dimension} must be a positive integer"):
+        MatplotlibRenderer({dimension: value})
+
+
 def test_renderer_rejects_invalid_padding_or_ground_height():
     with pytest.raises(ValueError, match="padding must be finite and non-negative"):
         MatplotlibRenderer({"padding": -0.1})
