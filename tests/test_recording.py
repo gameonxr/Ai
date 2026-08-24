@@ -72,6 +72,13 @@ def test_recording_metadata_and_transition_shapes_are_validated(tmp_path: Path):
         EpisodeRecorder.load_jsonl(transition_path)
 
 
+def test_recording_unknown_type_is_rejected(tmp_path: Path):
+    path = tmp_path / "unknown-type.jsonl"
+    path.write_text('{"type":"metadata","metadata":{}}\n{"type":"future-record"}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="Unknown episode recording type at line 2"):
+        EpisodeRecorder.load_jsonl(path)
+
+
 def test_recording_non_object_line_is_rejected(tmp_path: Path):
     path = tmp_path / "list.jsonl"
     path.write_text("[]\n", encoding="utf-8")

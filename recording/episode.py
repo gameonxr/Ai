@@ -76,6 +76,8 @@ class EpisodeRecorder:
                     if not isinstance(info, dict):
                         raise ValueError(f"Episode recording transition info at line {line_number} must be a JSON object")
                     recorder.transitions.append(RecordedTransition(record["observation"], record["action"], reward, record["done"], info))
+                else:
+                    raise ValueError(f"Unknown episode recording type at line {line_number}: {record.get('type')}")
         return recorder
 
     def __len__(self) -> int:
