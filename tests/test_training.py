@@ -22,6 +22,13 @@ def test_random_torque_policy_validates_constructor_inputs():
             RandomTorquePolicy(joint_names, scale=scale, seed=seed)
 
 
+def test_random_torque_policy_reset_rejects_invalid_seed():
+    policy = RandomTorquePolicy(["neck"], seed=1)
+    for value in (True, 1.5, "7"):
+        with pytest.raises(ValueError, match="seed must be an integer or null"):
+            policy.reset(value)  # type: ignore[arg-type]
+
+
 def test_rollout_jsonl_persistence(tmp_path: Path):
     sim = Simulator("config/simulator_config.yaml")
     policy = RandomTorquePolicy(list(sim.actuators), seed=1)

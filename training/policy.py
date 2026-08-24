@@ -36,6 +36,8 @@ class RandomTorquePolicy(Policy):
         self.rng = np.random.default_rng(seed)
 
     def reset(self, seed: int | None = None) -> None:
+        if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
+            raise ValueError("seed must be an integer or null")
         if seed is not None:
             self.rng = np.random.default_rng(seed)
 
