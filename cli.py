@@ -135,11 +135,19 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(report, indent=2, sort_keys=True))
         return 0 if report["healthy"] else 1
     if args.command == "report":
-        summary = ReportBuilder().build(args.manifest_dir)
-        if args.json_out:
-            ReportBuilder().write_json(summary, args.json_out)
-        if args.markdown_out:
-            ReportBuilder().write_markdown(summary, args.markdown_out)
+        manifest_dir = Path(args.manifest_dir)
+        if not manifest_dir.exists() or not manifest_dir.is_dir():
+            print(f"Report failed: manifest directory not found: {manifest_dir}", file=sys.stderr)
+            return 1
+        try:
+            summary = ReportBuilder().build(manifest_dir)
+            if args.json_out:
+                ReportBuilder().write_json(summary, args.json_out)
+            if args.markdown_out:
+                ReportBuilder().write_markdown(summary, args.markdown_out)
+        except (OSError, ValueError) as error:
+            print(f"Report failed: {error}", file=sys.stderr)
+            return 1
         print(json.dumps(summary.to_dict(), indent=2, sort_keys=True))
         return 1 if args.strict and summary.artifact_errors else 0
     if args.command == "evaluate":

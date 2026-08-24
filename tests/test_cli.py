@@ -124,6 +124,14 @@ def test_cli_health_reports_config_errors(capsys, tmp_path: Path, monkeypatch):
     assert "Health check failed: synthetic health failure" in capsys.readouterr().err
 
 
+def test_cli_report_rejects_missing_manifest_directory(capsys, tmp_path: Path):
+    missing = tmp_path / "missing-runs"
+    assert main(["report", "--manifest-dir", str(missing)]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert f"Report failed: manifest directory not found: {missing}" in captured.err
+
+
 def test_cli_report_strict_returns_nonzero_for_artifact_errors(capsys, tmp_path: Path):
     (tmp_path / "broken.json").write_text("{broken", encoding="utf-8")
     assert main(["report", "--manifest-dir", str(tmp_path), "--strict"]) == 1
