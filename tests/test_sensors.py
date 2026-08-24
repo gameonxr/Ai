@@ -10,6 +10,17 @@ from sensors.transforms import GaussianNoise, LowPassFilter
 from sensors.vision import VisionSensor
 
 
+def test_touch_sensor_validates_contact_input():
+    from sensors.touch import TouchSensor
+
+    sensor = TouchSensor("touch")
+    with pytest.raises(ValueError, match="physics_state must be an object"):
+        sensor.observe([])  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="contacts must be a list"):
+        sensor.observe({"contacts": {}})
+    assert sensor.observe({}) == {"contacts": []}
+
+
 def test_sensor_specific_transform_errors_are_contextual():
     with pytest.raises(ValueError, match="Invalid IMU sensor configuration"):
         IMUSensor("imu", {"noise_std": "not-a-number"})
