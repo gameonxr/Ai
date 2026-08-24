@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 import json
+import math
 from pathlib import Path
 from statistics import mean
 from typing import Any
@@ -11,6 +12,13 @@ from artifact_io import write_json_atomic, write_text_atomic
 
 KNOWN_ARTIFACT_TYPES = {"experiment_manifest", "evaluation", "benchmark", "health", "sweep", "checkpoint", "report"}
 SUPPORTED_SCHEMA_VERSION = 1
+
+
+def _finite_float(value: Any) -> float:
+    numeric = float(value)
+    if not math.isfinite(numeric):
+        raise ValueError("numeric value must be finite")
+    return numeric
 
 
 @dataclass
@@ -60,6 +68,23 @@ class ReportBuilder:
                 continue
             artifact_type = payload.get("artifact_type")
             if artifact_type in KNOWN_ARTIFACT_TYPES and payload.get("schema_version", SUPPORTED_SCHEMA_VERSION) != SUPPORTED_SCHEMA_VERSION:
+                artifact_errors.append(str(path))
+                continue
+            try:
+                if artifact_type == "evaluation":
+                    _finite_float(payload.get("mean_reward", 0.0))
+                elif artifact_type == "benchmark":
+                    _finite_float(payload.get("realtime_factor", 0.0))
+                elif artifact_type not in {"evaluation", "benchmark", "health", "sweep", "checkpoint", "report"} and "status" in payload:
+                    metrics = payload.get("metrics", [])
+                    if not isinstance(metrics, list):
+                        raise ValueError("manifest metrics must be a list")
+                    for episode in metrics:
+                        if not isinstance(episode, dict):
+                            raise ValueError("manifest episode metrics must be objects")
+                        _finite_float(episode.get("total_reward", 0.0))
+                        int(episode.get("steps", 0))
+            except (TypeError, ValueError, OverflowError):
                 artifact_errors.append(str(path))
                 continue
             artifacts.append(payload)

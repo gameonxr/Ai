@@ -103,6 +103,28 @@ def test_report_builder_aggregates_health_artifacts(tmp_path: Path):
     assert "Healthy snapshots: 1" in markdown_text
 
 
+def test_report_builder_skips_malformed_numeric_artifacts(tmp_path: Path):
+    (tmp_path / "bad-evaluation.json").write_text(json.dumps({
+        "artifact_type": "evaluation",
+        "schema_version": 1,
+        "mean_reward": "not-a-number",
+    }), encoding="utf-8")
+    (tmp_path / "bad-benchmark.json").write_text(json.dumps({
+        "artifact_type": "benchmark",
+        "schema_version": 1,
+        "realtime_factor": "not-a-number",
+    }), encoding="utf-8")
+    (tmp_path / "bad-manifest.json").write_text(json.dumps({
+        "status": "completed",
+        "metrics": {"not": "a-list"},
+    }), encoding="utf-8")
+    summary = ReportBuilder().build(tmp_path)
+    assert summary.evaluation_count == 0
+    assert summary.benchmark_count == 0
+    assert summary.manifest_count == 0
+    assert len(summary.artifact_errors) == 3
+
+
 def test_report_builder_records_malformed_artifacts_without_failing(tmp_path: Path):
     broken = tmp_path / "broken.json"
     broken.write_text("{not valid json", encoding="utf-8")
