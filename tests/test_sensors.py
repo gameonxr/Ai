@@ -4,9 +4,17 @@ import math
 import pytest
 
 from sensors.imu import IMUSensor
+from sensors.proprioception import ProprioceptionSensor
 from sensors.sensor_registry import build_sensors
 from sensors.transforms import GaussianNoise, LowPassFilter
 from sensors.vision import VisionSensor
+
+
+def test_sensor_specific_transform_errors_are_contextual():
+    with pytest.raises(ValueError, match="Invalid IMU sensor configuration"):
+        IMUSensor("imu", {"noise_std": "not-a-number"})
+    with pytest.raises(ValueError, match="Invalid proprioception sensor configuration"):
+        ProprioceptionSensor("proprioception", {"filter_alpha": 2.0})
 
 
 def test_vision_sensor_validates_camera_configuration():
