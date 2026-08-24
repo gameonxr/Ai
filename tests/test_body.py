@@ -7,6 +7,21 @@ import pytest
 import yaml
 
 
+def test_joint_rejects_malformed_configuration():
+    from body.joint import Joint
+
+    cases = (
+        ([], "Joint config must be a mapping"),
+        ({"parent": "torso", "child": "head", "axis": ["0", 0, 1]}, "Joint axis must be a finite 3-vector"),
+        ({"parent": "torso", "child": "head", "range": [1, 1]}, "Joint range must be a finite 2-vector"),
+        ({"parent": "torso", "child": "head", "max_torque": 0}, "Joint max_torque must be positive"),
+        ({"parent": "torso", "child": "head", "damping": -0.1}, "Joint damping must be non-negative"),
+    )
+    for config, message in cases:
+        with pytest.raises(ValueError, match=message):
+            Joint.from_config("neck", config)  # type: ignore[arg-type]
+
+
 def test_body_has_expected_dof():
     body = BodyLoader.load("config/body_humanoid.yaml")
     assert body.dof >= 12
