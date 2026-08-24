@@ -1,6 +1,7 @@
 from dataclasses import replace
 import logging
 import math
+from numbers import Real
 from .action import Action
 
 
@@ -14,10 +15,9 @@ class ActionValidator:
         self.logger = logging.getLogger(__name__)
 
     def _value(self, joint: str, value: float) -> tuple[bool, float, str | None]:
-        try:
-            numeric = float(value)
-        except (TypeError, ValueError):
+        if isinstance(value, bool) or not isinstance(value, Real):
             return False, 0.0, f"Non-numeric value for {joint}: {value!r}"
+        numeric = float(value)
         if not math.isfinite(numeric):
             return False, 0.0, f"Invalid value for {joint}: {value}"
         actuator = self.actuators[joint]
@@ -59,6 +59,10 @@ class ActionValidator:
             if vectors:
                 for body, vector in vectors.items():
                     try:
+                        if not isinstance(vector, (list, tuple)):
+                            raise ValueError
+                        if any(isinstance(x, bool) or not isinstance(x, Real) for x in vector):
+                            raise ValueError
                         values = [float(x) for x in vector]
                         if len(values) != 3 or not all(math.isfinite(x) for x in values):
                             raise ValueError

@@ -29,6 +29,18 @@ def test_unknown_and_nan_commands_are_rejected():
     assert not valid and len(errors) == 2
 
 
+def test_action_validator_rejects_coerced_command_values():
+    check, _ = validator()
+    cases = (
+        (Action(joint_targets={"neck": "0.1"}), "Non-numeric value for neck"),
+        (Action(motor_commands={"neck": {"target": True}}), "Non-numeric value for neck"),
+        (Action(forces={"torso": ["0.0", 0.0, 0.0]}), "Invalid forces for torso"),
+    )
+    for action, message in cases:
+        valid, _, errors = check.validate(action)
+        assert not valid and any(message in error for error in errors)
+
+
 def test_unsupported_motor_mode_is_rejected():
     check, _ = validator()
     valid, action, errors = check.validate(Action(motor_commands={"neck": {"target": 0.1, "mode": "velocity"}}))
