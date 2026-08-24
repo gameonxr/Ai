@@ -148,6 +148,26 @@ def test_report_builder_skips_malformed_numeric_artifacts(tmp_path: Path):
     assert len(summary.artifact_errors) == 5
 
 
+def test_report_builder_skips_malformed_manifest_fields(tmp_path: Path):
+    (tmp_path / "bad-status.json").write_text(json.dumps({
+        "status": "unknown",
+        "episodes_requested": 1,
+        "metrics": [],
+    }), encoding="utf-8")
+    (tmp_path / "bad-counter.json").write_text(json.dumps({
+        "status": "completed",
+        "episodes_requested": -1,
+        "metrics": [],
+    }), encoding="utf-8")
+    (tmp_path / "bad-episode.json").write_text(json.dumps({
+        "status": "completed",
+        "metrics": [{"episode": 0, "steps": 1, "total_reward": 0.0, "terminated": "yes"}],
+    }), encoding="utf-8")
+    summary = ReportBuilder().build(tmp_path)
+    assert summary.manifest_count == 0
+    assert len(summary.artifact_errors) == 3
+
+
 def test_report_builder_records_malformed_artifacts_without_failing(tmp_path: Path):
     broken = tmp_path / "broken.json"
     broken.write_text("{not valid json", encoding="utf-8")

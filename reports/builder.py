@@ -98,14 +98,21 @@ class ReportBuilder:
                     if "dependencies" in payload and not isinstance(payload["dependencies"], dict):
                         raise ValueError("health dependencies must be an object")
                 elif artifact_type not in {"evaluation", "benchmark", "health", "sweep", "checkpoint", "report"} and "status" in payload:
+                    if payload["status"] not in {"running", "completed", "failed"}:
+                        raise ValueError("manifest status must be recognized")
+                    for field in ("episodes_requested", "episodes_completed", "total_steps"):
+                        _nonnegative_int(payload.get(field, 0))
                     metrics = payload.get("metrics", [])
                     if not isinstance(metrics, list):
                         raise ValueError("manifest metrics must be a list")
                     for episode in metrics:
                         if not isinstance(episode, dict):
                             raise ValueError("manifest episode metrics must be objects")
+                        _nonnegative_int(episode.get("episode", 0))
                         _finite_float(episode.get("total_reward", 0.0))
-                        int(episode.get("steps", 0))
+                        _nonnegative_int(episode.get("steps", 0))
+                        if "terminated" in episode and not isinstance(episode["terminated"], bool):
+                            raise ValueError("manifest episode terminated must be boolean")
             except (TypeError, ValueError, OverflowError):
                 artifact_errors.append(str(path))
                 continue
