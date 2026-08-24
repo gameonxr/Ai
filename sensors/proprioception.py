@@ -8,8 +8,8 @@ class ProprioceptionSensor(Sensor):
     def __init__(self, name: str, config: dict | None = None):
         super().__init__(name, config)
         try:
-            self.noise = GaussianNoise(float(self.config.get("noise_std", 0.0)), self.config.get("seed"))
-            self.filter = LowPassFilter(float(self.config.get("filter_alpha", 1.0))) if "filter_alpha" in self.config else None
+            self.noise = GaussianNoise(self.config.get("noise_std", 0.0), self.config.get("seed"))
+            self.filter = LowPassFilter(self.config["filter_alpha"]) if "filter_alpha" in self.config else None
         except (TypeError, ValueError) as error:
             raise ValueError(f"Invalid proprioception sensor configuration: {error}") from error
 

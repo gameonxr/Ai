@@ -21,6 +21,18 @@ def test_touch_sensor_validates_contact_input():
     assert sensor.observe({}) == {"contacts": []}
 
 
+@pytest.mark.parametrize("config", [{"noise_std": "0.1"}, {"noise_std": True}, {"filter_alpha": "1.0"}])
+def test_imu_rejects_implicitly_coerced_transform_parameters(config):
+    with pytest.raises(ValueError, match="Invalid IMU sensor configuration"):
+        IMUSensor("imu", config)
+
+
+@pytest.mark.parametrize("config", [{"noise_std": "0.1"}, {"noise_std": True}, {"filter_alpha": "1.0"}])
+def test_proprioception_rejects_implicitly_coerced_transform_parameters(config):
+    with pytest.raises(ValueError, match="Invalid proprioception sensor configuration"):
+        ProprioceptionSensor("proprioception", config)
+
+
 def test_sensor_specific_transform_errors_are_contextual():
     with pytest.raises(ValueError, match="Invalid IMU sensor configuration"):
         IMUSensor("imu", {"noise_std": "not-a-number"})
