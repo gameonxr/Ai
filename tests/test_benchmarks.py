@@ -11,6 +11,17 @@ def test_benchmark_reports_expected_duration():
     assert result.final_state["step_count"] == 10
 
 
+def test_benchmark_artifact_rejects_malformed_runtime_fields():
+    malformed = [
+        (BenchmarkResult(0, 0.005, 0.005, 0.01, 0.5, {}), "steps must be a positive integer"),
+        (BenchmarkResult(1, 0.005, float("nan"), 0.01, 0.5, {}), "simulation_seconds must be a finite non-negative number"),
+        (BenchmarkResult(1, 0.005, 0.005, 0.01, 0.5, []), "final_state must be an object"),
+    ]
+    for result, message in malformed:
+        with pytest.raises(ValueError, match=message):
+            result.to_artifact_dict("config.yaml", 42)
+
+
 def test_benchmark_artifact_provenance_rejects_invalid_inputs():
     result = BenchmarkResult(1, 0.005, 0.005, 0.01, 0.5, {})
     with pytest.raises(ValueError, match="config_path must be a non-empty string"):

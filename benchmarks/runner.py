@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import math
 from time import perf_counter
 from typing import Any
 
@@ -25,6 +26,16 @@ class BenchmarkResult:
             raise ValueError("config_path must be a non-empty string")
         if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
             raise ValueError("seed must be an integer or null")
+        if isinstance(self.steps, bool) or not isinstance(self.steps, int) or self.steps < 1:
+            raise ValueError("steps must be a positive integer")
+        for field in ("timestep", "simulation_seconds", "wall_seconds", "realtime_factor"):
+            value = getattr(self, field)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)) or value < 0:
+                raise ValueError(f"{field} must be a finite non-negative number")
+        if self.timestep <= 0:
+            raise ValueError("timestep must be positive")
+        if not isinstance(self.final_state, dict):
+            raise ValueError("final_state must be an object")
         return {
             "artifact_type": "benchmark",
             "schema_version": 1,
