@@ -1,6 +1,7 @@
 from sensors import ObservationBuilder
 import math
 
+import numpy as np
 import pytest
 
 from body import BodyLoader
@@ -153,9 +154,10 @@ def test_perception_sensor_without_body_reports_unavailable_summary():
 
 
 def test_visual_fusion_builds_aligned_channel_summary():
+    camera = {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": (32, 24)}
     readings = {
-        "vision": {"frame_id": 1.0, "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": (32, 24)}, "available": True, "non_background_pixels": 12},
-        "depth": {"frame_id": 1.0, "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": (32, 24)}, "available": True, "valid_pixels": 9},
+        "vision": {"frame_id": 1.0, "camera": camera, "available": True, "rgb": np.zeros((24, 32, 3), dtype=np.uint8), "non_background_pixels": 12},
+        "depth": {"frame_id": 1.0, "camera": camera, "available": True, "depth": np.full((24, 32), 10.0, dtype=np.float32), "valid_pixels": 9},
     }
     summary = build_visual_fusion(readings)
     assert summary["aligned"] is True
@@ -164,10 +166,29 @@ def test_visual_fusion_builds_aligned_channel_summary():
     assert summary["channels"]["vision"]["valid_pixels"] == 12
 
 
+def test_visual_fusion_reports_channel_schema_metadata():
+    import numpy as np
+
+    camera = {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": (4, 3)}
+    summary = build_visual_fusion({"vision": {"frame_id": 1.0, "camera": camera, "available": True, "rgb": np.zeros((3, 4, 3), dtype=np.uint8), "non_background_pixels": 2}})
+    assert summary["channels"]["vision"]["shape"] == [3, 4, 3]
+    assert summary["channels"]["vision"]["dtype"] == "uint8"
+
+
+@pytest.mark.parametrize("reading, message", [
+    ({"frame_id": 1.0, "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": (4, 3)}, "available": True, "rgb": [[[]]]}, "RGB"),
+    ({"frame_id": 1.0, "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": (4, 3)}, "available": True, "depth": __import__("numpy").zeros((3, 4), dtype="float64")}, "depth"),
+])
+def test_visual_fusion_rejects_invalid_channel_schema(reading, message):
+    with pytest.raises(ValueError, match=message):
+        build_visual_fusion({"vision" if message == "RGB" else "depth": reading})
+
+
 def test_visual_fusion_rejects_mismatched_frames():
+    camera = {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": (32, 24)}
     readings = {
-        "vision": {"frame_id": 1.0, "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": (32, 24)}, "available": True},
-        "depth": {"frame_id": 2.0, "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": (32, 24)}, "available": True},
+        "vision": {"frame_id": 1.0, "camera": camera, "available": True, "rgb": np.zeros((24, 32, 3), dtype=np.uint8)},
+        "depth": {"frame_id": 2.0, "camera": camera, "available": True, "depth": np.zeros((24, 32), dtype=np.float32)},
     }
     with pytest.raises(ValueError, match="frame_id values must match"):
         build_visual_fusion(readings)
