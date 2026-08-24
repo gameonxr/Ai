@@ -109,6 +109,21 @@ def test_cli_health_writes_artifact(capsys, tmp_path: Path):
     assert artifact["config_path"]
 
 
+def test_cli_health_reports_config_errors(capsys, tmp_path: Path, monkeypatch):
+    missing = tmp_path / "missing.yaml"
+    assert main(["health", "--config", str(missing)]) == 1
+    captured = capsys.readouterr()
+    assert json.loads(captured.out)["healthy"] is False
+    assert captured.err == ""
+
+    def fail_health(_config):
+        raise ValueError("synthetic health failure")
+
+    monkeypatch.setattr("cli.collect_health", fail_health)
+    assert main(["health", "--config", str(missing)]) == 1
+    assert "Health check failed: synthetic health failure" in capsys.readouterr().err
+
+
 def test_cli_report_strict_returns_nonzero_for_artifact_errors(capsys, tmp_path: Path):
     (tmp_path / "broken.json").write_text("{broken", encoding="utf-8")
     assert main(["report", "--manifest-dir", str(tmp_path), "--strict"]) == 1

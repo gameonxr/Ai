@@ -125,9 +125,13 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(benchmark_result.to_dict(), indent=2, sort_keys=True))
         return 0
     if args.command == "health":
-        report = collect_health(args.config)
-        if args.json_out:
-            write_json_atomic({"artifact_type": "health", "schema_version": 1, "config_path": args.config, **report}, args.json_out)
+        try:
+            report = collect_health(args.config)
+            if args.json_out:
+                write_json_atomic({"artifact_type": "health", "schema_version": 1, "config_path": args.config, **report}, args.json_out)
+        except (OSError, ValueError) as error:
+            print(f"Health check failed: {error}", file=sys.stderr)
+            return 1
         print(json.dumps(report, indent=2, sort_keys=True))
         return 0 if report["healthy"] else 1
     if args.command == "report":
