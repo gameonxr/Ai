@@ -58,6 +58,14 @@ def test_cli_evaluate(capsys):
     assert payload["total_steps"] == 6
 
 
+def test_cli_sweep_reports_cases_file_errors(capsys, tmp_path: Path):
+    missing = tmp_path / "missing-cases.json"
+    assert main(["sweep", "--cases", str(missing)]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "Sweep failed: Unable to read sweep cases" in captured.err
+
+
 def test_cli_run(capsys, tmp_path: Path):
     assert main(["run", "--run-id", "cli-test", "--manifest-dir", str(tmp_path), "--episodes", "1", "--max-steps", "2"]) == 0
     payload = json.loads(capsys.readouterr().out)

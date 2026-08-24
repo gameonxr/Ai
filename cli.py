@@ -146,7 +146,11 @@ def main(argv: list[str] | None = None) -> int:
         finally:
             simulator.shutdown()
     if args.command == "sweep":
-        result = SweepRunner(args.sweep_id, args.manifest_dir, resume=args.resume).run_file(args.cases)
+        try:
+            result = SweepRunner(args.sweep_id, args.manifest_dir, resume=args.resume).run_file(args.cases)
+        except (OSError, ValueError) as error:
+            print(f"Sweep failed: {error}", file=sys.stderr)
+            return 1
         if args.json_out:
             result.write_json(args.json_out)
         print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
