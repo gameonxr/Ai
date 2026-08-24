@@ -12,7 +12,7 @@ from benchmarks import run_benchmark
 from config_validation import ConfigurationValidator
 from experiments import ExperimentRunner, SweepRunner
 from evaluation import Evaluator
-from health import collect_health
+from health import collect_health, to_artifact_dict as health_to_artifact_dict
 from reports import ReportBuilder
 from simulator import Simulator
 from training import RandomTorquePolicy
@@ -128,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             report = collect_health(args.config)
             if args.json_out:
-                write_json_atomic({"artifact_type": "health", "schema_version": 1, "config_path": args.config, **report}, args.json_out)
+                write_json_atomic(health_to_artifact_dict(report, args.config), args.json_out)
         except (OSError, ValueError) as error:
             print(f"Health check failed: {error}", file=sys.stderr)
             return 1
