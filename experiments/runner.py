@@ -100,10 +100,12 @@ class ExperimentRunner:
         self._validate_nonnegative_int("checkpoint_every", checkpoint_every)
         started = datetime.now(timezone.utc).isoformat()
         manifest = RunManifest(self.run_id, "running", started, None, self.simulator_config, episodes, 0, 0, metadata=self.metadata.copy(), max_steps_requested=max_steps, seed=seed)
-        simulator = Simulator(self.simulator_config)
-        policy = self.policy_factory(simulator) if self.policy_factory else RandomTorquePolicy(list(simulator.actuators), seed=seed)
-        trainer = Trainer(simulator, policy, reward_fn=lambda observation, action: 0.0)
+        simulator = None
+        trainer = None
         try:
+            simulator = Simulator(self.simulator_config)
+            policy = self.policy_factory(simulator) if self.policy_factory else RandomTorquePolicy(list(simulator.actuators), seed=seed)
+            trainer = Trainer(simulator, policy, reward_fn=lambda observation, action: 0.0)
             for episode in range(episodes):
                 _, metrics = trainer.run_episode(max_steps=max_steps, seed=None if seed is None else seed + episode)
                 manifest.metrics.append({"episode": episode, "steps": metrics.steps, "total_reward": metrics.total_reward, "terminated": metrics.terminated})
@@ -119,8 +121,13 @@ class ExperimentRunner:
             raise
         finally:
             manifest.finished_at = datetime.now(timezone.utc).isoformat()
-            self._save_manifest(manifest)
-            trainer.close()
+            try:
+                self._save_manifest(manifest)
+            finally:
+                if trainer is not None:
+                    trainer.close()
+                elif simulator is not None:
+                    simulator.shutdown()
         return manifest
 
     @staticmethod

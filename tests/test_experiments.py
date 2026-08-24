@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from experiments import ExperimentRunner, RunManifest
+import experiments.runner as runner_module
 
 
 def test_experiment_runner_writes_manifest_and_checkpoint(tmp_path: Path):
@@ -17,6 +18,30 @@ def test_experiment_runner_writes_manifest_and_checkpoint(tmp_path: Path):
     payload = json.loads((tmp_path / "test-run.json").read_text(encoding="utf-8"))
     assert payload["run_id"] == "test-run"
     assert len(payload["metrics"]) == 2
+
+
+def test_experiment_runner_cleans_up_when_policy_setup_fails(tmp_path: Path, monkeypatch):
+    created = []
+
+    class StubSimulator:
+        def __init__(self, config_path):
+            self.actuators = {"neck": object()}
+            self.closed = False
+            created.append(self)
+
+        def shutdown(self):
+            self.closed = True
+
+    def fail_policy(simulator):
+        raise RuntimeError("policy setup failed")
+
+    monkeypatch.setattr(runner_module, "Simulator", StubSimulator)
+    runner = ExperimentRunner("config/simulator_config.yaml", "setup-failure", tmp_path, policy_factory=fail_policy)
+    with pytest.raises(RuntimeError, match="policy setup failed"):
+        runner.run(episodes=1)
+    assert created[0].closed
+    payload = json.loads((tmp_path / "setup-failure.json").read_text(encoding="utf-8"))
+    assert payload["status"] == "failed" and payload["finished_at"]
 
 
 def test_run_manifest_artifact_rejects_malformed_fields():
