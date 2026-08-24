@@ -46,6 +46,7 @@ class Simulator:
         self.step_count = 0
         self.paused = False
         self.running = False
+        self._shutdown = False
         log_event(self.logger, 20, "simulator_initialized", {"engine": engine_name, "dof": self.body.dof, "timestep": self.timestep})
 
     def _path_from_config(self, section: str) -> Path:
@@ -54,12 +55,18 @@ class Simulator:
             path = self.config_path.parent.parent / path
         return path
 
+    def _ensure_active(self) -> None:
+        if self._shutdown:
+            raise RuntimeError("Simulator is shut down")
+
     def set_brain(self, brain: BrainInterface | None) -> None:
+        self._ensure_active()
         if brain is not None and not isinstance(brain, BrainInterface):
             raise TypeError("brain must implement BrainInterface or be None")
         self.brain = brain
 
     def reset(self, seed: int | None = None) -> None:
+        self._ensure_active()
         if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
             raise ValueError("seed must be an integer or null")
         if seed is not None:
@@ -77,6 +84,7 @@ class Simulator:
             self.brain.reset({"seed": seed})
 
     def step(self, n_steps: int = 1):
+        self._ensure_active()
         if isinstance(n_steps, bool) or not isinstance(n_steps, int) or n_steps < 1:
             raise ValueError("n_steps must be a positive integer")
         observation = None
@@ -105,34 +113,46 @@ class Simulator:
             self.metrics.record_step(self.timestep, action_applied, invalid_action)
         return observation
 
-    def pause(self) -> None: self.paused = True
-    def resume(self) -> None: self.paused = False
+    def pause(self) -> None:
+        self._ensure_active()
+        self.paused = True
+
+    def resume(self) -> None:
+        self._ensure_active()
+        self.paused = False
 
     def get_state(self) -> dict:
+        self._ensure_active()
         return {"current_time": self.current_time, "step_count": self.step_count, "paused": self.paused, "physics_state": self.physics.get_body_state(), "metrics": self.metrics.snapshot()}
 
     def save_checkpoint(self, path: str | Path, run_id: str = "default", metadata: dict | None = None):
         """Persist simulator state for a later resumable run."""
+        self._ensure_active()
         checkpoint = CheckpointManager.save(self, path, run_id, metadata)
         log_event(self.logger, 20, "checkpoint_saved", {"path": str(path), "step": self.step_count})
         return checkpoint
 
     def restore_checkpoint(self, path: str | Path):
         """Restore a checkpoint created by ``save_checkpoint``."""
+        self._ensure_active()
         checkpoint = CheckpointManager.restore(self, path)
         log_event(self.logger, 20, "checkpoint_restored", {"path": str(path), "step": self.step_count})
         return checkpoint
 
     def render(self, output_path: str | Path | None = None):
         """Render the current state when rendering is enabled in YAML."""
+        self._ensure_active()
         if self.renderer is None:
             raise RuntimeError("Rendering is disabled; set rendering.enabled to true")
         return self.renderer.render(self.body, self.physics.get_body_state(), output_path)
 
     def shutdown(self) -> None:
+        if self._shutdown:
+            return
         log_event(self.logger, 20, "simulator_shutdown", self.metrics.snapshot())
         if self.brain:
             self.brain.shutdown()
         if self.renderer:
             self.renderer.close()
         self.physics.shutdown()
+        self._shutdown = True

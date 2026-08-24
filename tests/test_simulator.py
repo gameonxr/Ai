@@ -34,6 +34,15 @@ def test_simulator_step_requires_positive_integer():
         sim.shutdown()
 
 
+def test_shutdown_is_idempotent_and_guards_operations():
+    sim = Simulator("config/simulator_config.yaml")
+    sim.shutdown()
+    sim.shutdown()
+    for operation in (lambda: sim.reset(), lambda: sim.step(), lambda: sim.get_state(), lambda: sim.pause(), lambda: sim.resume()):
+        with pytest.raises(RuntimeError, match="Simulator is shut down"):
+            operation()
+
+
 def test_integration_loop_and_pause():
     sim = Simulator("config/simulator_config.yaml")
     sim.set_brain(DummyBrain())
