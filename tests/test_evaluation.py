@@ -1,8 +1,18 @@
 import pytest
 
-from evaluation import Evaluator
+from evaluation import EvaluationSummary, Evaluator
 from simulator import Simulator
 from training import RandomTorquePolicy
+
+
+def test_evaluation_artifact_provenance_rejects_invalid_inputs():
+    summary = EvaluationSummary(1, 1, 1.0, 0.0, 1.0, 1.0, 1.0, [])
+    with pytest.raises(ValueError, match="config_path must be a non-empty string"):
+        summary.to_artifact_dict("", 42, 1.0)
+    with pytest.raises(ValueError, match="seed must be an integer or null"):
+        summary.to_artifact_dict("config.yaml", True, 1.0)
+    with pytest.raises(ValueError, match="reward_per_step must be a finite number"):
+        summary.to_artifact_dict("config.yaml", 42, float("nan"))
 
 
 def test_evaluator_aggregates_episode_metrics():

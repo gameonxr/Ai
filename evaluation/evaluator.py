@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from dataclasses import asdict, dataclass
 from statistics import mean, pstdev
 from typing import Callable, Any
@@ -24,6 +25,12 @@ class EvaluationSummary:
 
     def to_artifact_dict(self, config_path: str, seed: int | None, reward_per_step: float) -> dict[str, Any]:
         """Return a persisted evaluation payload with reproducibility metadata."""
+        if not isinstance(config_path, str) or not config_path.strip():
+            raise ValueError("config_path must be a non-empty string")
+        if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
+            raise ValueError("seed must be an integer or null")
+        if isinstance(reward_per_step, bool) or not isinstance(reward_per_step, (int, float)) or not math.isfinite(float(reward_per_step)):
+            raise ValueError("reward_per_step must be a finite number")
         return {
             "artifact_type": "evaluation",
             "schema_version": 1,
