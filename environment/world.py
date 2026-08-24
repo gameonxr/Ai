@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 import math
 
+from .object_loader import load_floor
 from .static_objects import Floor
 
 
@@ -36,7 +37,7 @@ class World:
         self.gravity = gravity
         self.floor_friction = float(self.floor_friction)
         self.floor_size = floor_size
-        self.floor = Floor(self.floor_size, self.floor_friction) if self.floor_enabled else None
+        self.floor = load_floor({"floor_size": self.floor_size, "floor_friction": self.floor_friction}) if self.floor_enabled else None
 
     def definition(self) -> dict:
         return {
