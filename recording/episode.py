@@ -41,8 +41,13 @@ class EpisodeRecorder:
 
     @classmethod
     def load_jsonl(cls, path: str | Path) -> "EpisodeRecorder":
+        recording_path = Path(path)
         recorder = cls()
-        with Path(path).open(encoding="utf-8") as handle:
+        try:
+            handle = recording_path.open(encoding="utf-8")
+        except OSError as error:
+            raise ValueError(f"Unable to read episode recording {recording_path}: {error}") from error
+        with handle:
             for line_number, line in enumerate(handle, start=1):
                 try:
                     record = json.loads(line)

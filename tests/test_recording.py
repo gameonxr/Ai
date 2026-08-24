@@ -31,6 +31,13 @@ def test_recording_round_trip(tmp_path: Path):
     assert loaded.transitions[0].reward == 1.5
 
 
+def test_recording_loader_reports_unreadable_file(tmp_path: Path):
+    unreadable = tmp_path / "recording-directory"
+    unreadable.mkdir()
+    with pytest.raises(ValueError, match="Unable to read episode recording"):
+        EpisodeRecorder.load_jsonl(unreadable)
+
+
 def test_recording_loader_rejects_malformed_transition_fields(tmp_path: Path):
     prefix = '{"type":"metadata","metadata":{}}\n'
     cases = [
