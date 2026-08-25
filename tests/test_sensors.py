@@ -165,6 +165,11 @@ def test_segmentation_sensor_without_body_reports_unavailable_map():
     assert reading["segmentation"].max() == 0
 
 
+def test_perception_sensor_rejects_invalid_resolution():
+    with pytest.raises(ValueError, match="perception resolution"):
+        PerceptionSensor("perception", {"resolution": [0, 64]})
+
+
 def test_perception_sensor_rejects_invalid_view_scale():
     with pytest.raises(ValueError, match="perception view_scale"):
         PerceptionSensor("perception", {"view_scale": 0.0})
@@ -184,12 +189,15 @@ def test_perception_sensor_returns_structured_body_summary():
     assert reading["world_objects"] == [{"type": "floor", "visible": True}]
     assert reading["frame_id"] == 0.0
     assert reading["camera"]["projection"] == "orthographic"
+    assert reading["camera"]["world_bounds"]["x"] == (-2.0, 2.0)
 
 
 def test_visual_sensors_share_frame_id_for_sensor_fusion():
     body = BodyLoader.load("config/body_humanoid.yaml")
     state = {"time": 1.25, "joint_positions": {name: 0.0 for name in body.joints}, "world": {"floor_enabled": True, "objects": [{"type": "floor", "size": (4.0, 6.0)}]}}
     readings = [sensor.observe(state) for sensor in (VisionSensor("vision", body=body), DepthSensor("depth", body=body), SegmentationSensor("segmentation", body=body), PerceptionSensor("perception", body=body))]
+    expected_bounds = readings[0]["camera"]["world_bounds"]
+    assert all(reading["camera"]["world_bounds"] == expected_bounds for reading in readings)
     assert {reading["frame_id"] for reading in readings} == {1.25}
 
 

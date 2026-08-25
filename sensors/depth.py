@@ -7,6 +7,7 @@ import numpy as np
 
 from rendering.matplotlib_3d_renderer import project_body_3d
 
+from .camera import camera_metadata, projection_bounds
 from .sensor_base import Sensor
 
 
@@ -38,12 +39,11 @@ class DepthSensor(Sensor):
         depth = np.full((self.resolution[1], self.resolution[0]), self.far, dtype=np.float32)
         if self.body is not None:
             points = project_body_3d(self.body, physics_state)
-            floor_width = self._floor_width(physics_state)
-            x_half = max(floor_width / 2.0 if floor_width is not None else 1.0, 1.0) * self.view_scale
-            view_half_height = max(1.0, x_half * self.resolution[1] / self.resolution[0])
-            target_x, target_z = self.target if self.target is not None else (0.0, -0.15 + view_half_height)
-            z_min = target_z - view_half_height
-            z_max = target_z + view_half_height
+            bounds = projection_bounds(physics_state, self.resolution, self.view_scale, self.target)
+            x_half = bounds["x_half"]
+            z_min = bounds["y_min"]
+            z_max = bounds["y_max"]
+            target_x = bounds["target"][0]
             projected = {
                 name: (self._pixel((point[0], point[2]), x_half, z_min, z_max, target_x), self._distance(point[1]))
                 for name, point in points.items()
@@ -59,7 +59,7 @@ class DepthSensor(Sensor):
             "near": self.near,
             "far": self.far,
             "frame_id": self.frame_id(physics_state),
-            "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": self.resolution, "near": self.near, "far": self.far, "view_scale": self.view_scale, "target": self.target},
+            "camera": camera_metadata(self.resolution, self.view_scale, self.target, projection_bounds(physics_state, self.resolution, self.view_scale, self.target), near=self.near, far=self.far),
             "available": self.body is not None,
             "source": "headless_body_projection" if self.body is not None else "unconfigured_body_projection",
             "valid_pixels": int(np.count_nonzero(depth < self.far)),

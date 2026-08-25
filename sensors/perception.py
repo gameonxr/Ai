@@ -4,6 +4,7 @@ from typing import Any
 import math
 
 from rendering.matplotlib_3d_renderer import project_body_3d
+from .camera import camera_metadata, projection_bounds
 
 from .sensor_base import Sensor
 
@@ -13,9 +14,13 @@ class PerceptionSensor(Sensor):
 
     def __init__(self, name: str, config: dict | None = None, body: Any = None):
         super().__init__(name, config)
+        resolution = self.config.get("resolution", [64, 64])
+        if not isinstance(resolution, (list, tuple)) or len(resolution) != 2 or any(isinstance(value, bool) or not isinstance(value, int) or value < 1 for value in resolution):
+            raise ValueError("perception resolution must be a pair of positive integers")
         view_scale = self.config.get("view_scale", 1.0)
         if isinstance(view_scale, bool) or not isinstance(view_scale, (int, float)) or not math.isfinite(float(view_scale)) or float(view_scale) <= 0:
             raise ValueError("perception view_scale must be a finite positive number")
+        self.resolution = (int(resolution[0]), int(resolution[1]))
         self.view_scale = float(view_scale)
         self.target = self.camera_target()
         self.body = body
@@ -28,7 +33,7 @@ class PerceptionSensor(Sensor):
                 "available": False,
                 "source": "unconfigured_body_projection",
                 "frame_id": self.frame_id(physics_state),
-                "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "view_scale": self.view_scale, "target": self.target},
+                "camera": camera_metadata(self.resolution, self.view_scale, self.target, projection_bounds(physics_state, self.resolution, self.view_scale, self.target)),
                 "visible_links": [],
                 "link_positions": {},
                 "body_bounds": None,
@@ -58,7 +63,7 @@ class PerceptionSensor(Sensor):
             "available": True,
             "source": "headless_body_projection",
             "frame_id": self.frame_id(physics_state),
-            "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "view_scale": self.view_scale, "target": self.target},
+            "camera": camera_metadata(self.resolution, self.view_scale, self.target, projection_bounds(physics_state, self.resolution, self.view_scale, self.target)),
             "visible_links": list(points),
             "link_positions": link_positions,
             "body_bounds": bounds,

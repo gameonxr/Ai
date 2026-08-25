@@ -5,6 +5,7 @@ from typing import Any
 import numpy as np
 
 from rendering.kinematics import project_body
+from .camera import camera_metadata, projection_bounds
 
 from .sensor_base import Sensor
 
@@ -34,12 +35,12 @@ class SegmentationSensor(Sensor):
         labels = np.zeros((self.resolution[1], self.resolution[0]), dtype=np.int32)
         if self.body is not None:
             points = project_body(self.body, physics_state)
-            floor_width = self._floor_width(physics_state)
-            x_half = max(floor_width / 2.0 if floor_width is not None else 1.0, 1.0) * self.view_scale
-            view_half_height = max(1.0, x_half * self.resolution[1] / self.resolution[0])
-            target_x, target_y = self.target if self.target is not None else (0.0, -0.15 + view_half_height)
-            y_min = target_y - view_half_height
-            y_max = target_y + view_half_height
+            bounds = projection_bounds(physics_state, self.resolution, self.view_scale, self.target)
+            floor_width = bounds["floor_width"]
+            x_half = bounds["x_half"]
+            y_min = bounds["y_min"]
+            y_max = bounds["y_max"]
+            target_x = bounds["target"][0]
             projected = {name: self._pixel(point, x_half, y_min, y_max, target_x) for name, point in points.items()}
             for joint in self.body.joints.values():
                 if joint.parent in projected and joint.child in projected:
@@ -55,7 +56,7 @@ class SegmentationSensor(Sensor):
             "segmentation": labels,
             "resolution": self.resolution,
             "frame_id": self.frame_id(physics_state),
-            "camera": {"projection": "orthographic", "coordinate_frame": "body_debug", "resolution": self.resolution, "view_scale": self.view_scale, "target": self.target},
+            "camera": camera_metadata(self.resolution, self.view_scale, self.target, projection_bounds(physics_state, self.resolution, self.view_scale, self.target)),
             "available": self.body is not None,
             "source": "headless_body_projection" if self.body is not None else "unconfigured_body_projection",
             "label_map": dict(self.label_map),
